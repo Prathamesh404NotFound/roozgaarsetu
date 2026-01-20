@@ -1,0 +1,46 @@
+{
+  "services": [
+    {
+      "id": "cooking",
+      "name": "Cooking",
+      "description": "Professional cooks for daily meals, special occasions, or dietary needs",
+      "icon": "ChefHat",
+      "priceRange": "₹100 - ₹300/hr"
+    },
+    {
+      "id": "cleaning",
+      "name": "House Cleaning",
+      "description": "Thorough cleaning services for homes of all sizes",
+      "icon": "Sparkles",
+      "priceRange": "₹80 - ₹200/hr"
+    },
+    {
+      "id": "childcare",
+      "name": "Childcare",
+      "description": "Experienced nannies and babysitters for your children",
+      "icon": "Baby",
+      "priceRange": "₹150 - ₹400/hr"
+    },
+    {
+      "id": "eldercare",
+      "name": "Elder Care",
+      "description": "Compassionate care for elderly family members",
+      "icon": "Heart",
+      "priceRange": "₹150 - ₹350/hr"
+    },
+    {
+      "id": "laundry",
+      "name": "Laundry & Ironing",
+      "description": "Professional laundry and ironing services",
+      "icon": "Shirt",
+      "priceRange": "₹60 - ₹150/hr"
+    },
+    {
+      "id": "driving",
+      "name": "Driver Services",
+      "description": "Reliable drivers for daily commute or special trips",
+      "icon": "Car",
+      "priceRange": "₹200 - ₹500/hr"
+    }
+  ]
+}

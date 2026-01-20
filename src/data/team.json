@@ -1,0 +1,45 @@
+{
+  "team": [
+    {
+      "id": "t1",
+      "name": "Dr. Shivani Kale",
+      "role": "Founder",
+      "bio": "Academic expertise in technology innovation and professional networking. Leading RoozgaarSetu's mission to transform career opportunities.",
+      "image": "/Team/Shivani-Kale.jpg",
+      "social": {
+        "linkedin": "https://linkedin.com/in/shivani-kale",
+        "twitter": "https://twitter.com/shivani_kale",
+        "email": "shivani@roozgaarsetu.com"
+      }
+    },
+    {
+      "id": "t3",
+      "name": "Dr. Suresh Mane",
+      "role": "Co-Founder & Advisor",
+      "bio": "Research background in technology-driven social solutions and innovation management. Guiding RoozgaarSetu's strategic direction.",
+      "image": "/Team/Dr. Suresh Mane.jpg",
+      "social": {
+        "linkedin": "https://linkedin.com/in/suresh-mane",
+        "twitter": "https://twitter.com/suresh_mane",
+        "email": "suresh@roozgaarsetu.com"
+      }
+    },
+    {
+      "id": "t2",
+      "name": "Kiran Ingawale",
+      "role": "Co-Founder",
+      "bio": "Industry experience in platform development and digital marketplace strategies. Building technology that empowers professionals and businesses.",
+      "image": "/Team/Kiran-Ingawale.jpg",
+      "social": {
+        "linkedin": "https://linkedin.com/in/kiran-ingawale",
+        "twitter": "https://twitter.com/kiran_ingawale",
+        "email": "kiran@roozgaarsetu.com"
+      }
+    }
+  ],
+  "developerCompany": {
+    "name": "RoozgaarSetu Tech",
+    "website": "https://roozgaarsetu.com",
+    "contact": "tech@roozgaarsetu.com"
+  }
+}
