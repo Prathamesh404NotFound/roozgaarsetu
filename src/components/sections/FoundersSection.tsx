@@ -1,8 +1,5 @@
 import { motion } from "framer-motion";
 import { Linkedin, Twitter, Mail } from "lucide-react";
-import shivaniImage from "@/assets/Team/Shivani-Kale.jpg";
-import sureshImage from "@/assets/Team/Dr. Suresh Mane.jpg";
-import kiranImage from "@/assets/Team/Kiran-Ingawale.jpg";
 
 const founders = [
     {
@@ -10,7 +7,7 @@ const founders = [
         name: "Dr. Shivani Kale",
         role: "Founder",
         bio: "Academic expertise in technology innovation and professional networking. Leading RoozgaarSetu's mission to transform career opportunities.",
-        image: shivaniImage,
+        image: "/Team/Shivani-Kale.jpg",
         social: {
             linkedin: "https://linkedin.com/in/shivani-kale",
             twitter: "https://twitter.com/shivani_kale",
@@ -22,7 +19,7 @@ const founders = [
         name: "Dr. Suresh Mane",
         role: "Co-Founder & Advisor",
         bio: "Research background in technology-driven social solutions and innovation management. Guiding RoozgaarSetu's strategic direction.",
-        image: sureshImage,
+        image: "/Team/Dr. Suresh Mane.jpg",
         social: {
             linkedin: "https://linkedin.com/in/suresh-mane",
             twitter: "https://twitter.com/suresh_mane",
@@ -34,7 +31,7 @@ const founders = [
         name: "Kiran Ingawale",
         role: "Co-Founder",
         bio: "Industry experience in platform development and digital marketplace strategies. Building technology that empowers professionals and businesses.",
-        image: kiranImage,
+        image: "/Team/Kiran-Ingawale.jpg",
         social: {
             linkedin: "https://linkedin.com/in/kiran-ingawale",
             twitter: "https://twitter.com/kiran_ingawale",
