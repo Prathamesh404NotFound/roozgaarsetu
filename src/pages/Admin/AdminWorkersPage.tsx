@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ref, get, update } from "firebase/database";
-import { ArrowLeft, Loader2, Search, CheckCircle, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Loader2, Search, CheckCircle, ShieldAlert, FileText, ChevronDown } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { database } from "@/lib/firebase";
+import { VerificationBadge, type VerificationTier } from "@/components/ui/VerificationBadge";
 
 interface WorkerRecord {
   uid: string;
@@ -14,6 +15,8 @@ interface WorkerRecord {
   city: string;
   bio: string;
   isVerified?: boolean;
+  verificationStatus?: VerificationTier;
+  idDocumentUrl?: string;
   registeredAt?: string;
   displayName?: string;
   email?: string;
@@ -46,6 +49,8 @@ const AdminWorkersPage = () => {
             city: w.city ?? "",
             bio: w.bio ?? "",
             isVerified: w.isVerified ?? false,
+            verificationStatus: w.verificationStatus ?? (w.isVerified ? "skill_verified" : "unverified"),
+            idDocumentUrl: w.idDocumentUrl,
             registeredAt: w.registeredAt,
             displayName: userObj.displayName ?? "Worker",
             email: userObj.email ?? "",
@@ -65,19 +70,19 @@ const AdminWorkersPage = () => {
     fetchWorkersAndUsers();
   }, []);
 
-  const toggleVerification = async (uid: string, currentStatus: boolean) => {
+  const changeTier = async (uid: string, tier: VerificationTier) => {
     setUpdatingId(uid);
     try {
-      const nextStatus = !currentStatus;
+      const isVerified = (tier === "id_verified" || tier === "skill_verified");
       await Promise.all([
-        update(ref(database, `workers/${uid}`), { isVerified: nextStatus }),
-        update(ref(database, `users/${uid}`), { isVerified: nextStatus }),
+        update(ref(database, `workers/${uid}`), { verificationStatus: tier, isVerified }),
+        update(ref(database, `users/${uid}`), { verificationStatus: tier, isVerified }),
       ]);
       setWorkers((prev) =>
-        prev.map((w) => (w.uid === uid ? { ...w, isVerified: nextStatus } : w))
+        prev.map((w) => (w.uid === uid ? { ...w, verificationStatus: tier, isVerified } : w))
       );
     } catch (err) {
-      console.error("Failed to toggle verification:", err);
+      console.error("Failed to change verification tier:", err);
     } finally {
       setUpdatingId(null);
     }
@@ -101,7 +106,7 @@ const AdminWorkersPage = () => {
               <ArrowLeft className="h-4 w-4" /> Back to Dashboard
             </Link>
             <h1 className="font-heading text-2xl font-bold text-white">Workers Profiles</h1>
-            <p className="text-white/70">Verify or reject worker registrations</p>
+            <p className="text-white/70">Manage worker verification tiers and credentials</p>
           </motion.div>
         </div>
       </section>
@@ -163,46 +168,65 @@ const AdminWorkersPage = () => {
                       </div>
                     </div>
 
+                    {/* ID Document Details Panel */}
+                    <div className="rounded-xl border border-border bg-muted/20 p-4">
+                      <span className="block text-xs font-medium text-muted-foreground uppercase mb-1.5">Government ID Document</span>
+                      {w.idDocumentUrl ? (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm text-foreground">
+                            <FileText className="h-4 w-4 text-primary" />
+                            <span className="font-medium truncate max-w-[200px]">
+                              {w.idDocumentUrl.replace("mock://uploaded-documents/", "")}
+                            </span>
+                          </div>
+                          <a
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              alert(`Simulating View Document for: ${w.idDocumentUrl}`);
+                            }}
+                            className="text-xs text-primary hover:underline font-semibold"
+                          >
+                            View document
+                          </a>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">No document uploaded yet</span>
+                      )}
+                    </div>
+
                     <div>
                       <span className="block text-xs font-medium text-muted-foreground uppercase">Bio</span>
-                      <p className="mt-1 text-sm text-foreground line-clamp-3">{w.bio}</p>
+                      <p className="mt-1 text-sm text-foreground line-clamp-3 leading-relaxed">{w.bio}</p>
                     </div>
                   </div>
 
-                  <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
-                    <div className="flex items-center gap-1.5">
-                      {w.isVerified ? (
-                        <span className="flex items-center gap-1 text-xs font-medium text-green-600">
-                          <CheckCircle className="h-4 w-4" /> Verified
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-xs font-medium text-yellow-600">
-                          <ShieldAlert className="h-4 w-4" /> Pending Verification
-                        </span>
-                      )}
+                  <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-muted-foreground">Current Tier:</span>
+                      <VerificationBadge size="sm" status={w.verificationStatus} />
                     </div>
 
-                    <button
-                      id={`btn-verify-toggle-${w.uid}`}
-                      onClick={() => toggleVerification(w.uid, !!w.isVerified)}
-                      disabled={updatingId === w.uid}
-                      className={`
-                        flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition
-                        ${w.isVerified
-                          ? "border border-destructive text-destructive hover:bg-destructive/5"
-                          : "bg-primary text-primary-foreground hover:bg-primary/90"
-                        }
-                        disabled:opacity-50
-                      `}
-                    >
+                    {/* Set verification status dropdown */}
+                    <div className="relative min-w-[170px]">
+                      <select
+                        id={`select-verify-tier-${w.uid}`}
+                        disabled={updatingId === w.uid}
+                        value={w.verificationStatus || "unverified"}
+                        onChange={(e) => changeTier(w.uid, e.target.value as VerificationTier)}
+                        className="w-full appearance-none rounded-lg border border-border bg-background py-2 pl-3 pr-8 text-xs font-semibold outline-none ring-primary transition focus:ring-1"
+                      >
+                        <option value="unverified">Unverified</option>
+                        <option value="phone_verified">Phone Verified</option>
+                        <option value="id_verified">ID Verified</option>
+                        <option value="skill_verified">Skill Verified</option>
+                      </select>
                       {updatingId === w.uid ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : w.isVerified ? (
-                        "Reject / Unverify"
+                        <Loader2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
                       ) : (
-                        "Verify Registration"
+                        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                       )}
-                    </button>
+                    </div>
                   </div>
                 </div>
               ))}

@@ -25,10 +25,14 @@ export type ServiceCategoryId = (typeof SERVICE_CATEGORIES)[number]["id"];
 interface WorkerRegistration {
   uid: string;
   category: ServiceCategoryId;
+  categories: string[];
   experience: string;
   phone: string;
   city: string;
+  locality?: string;
   bio: string;
+  isVerified: boolean;
+  verificationStatus: 'unverified' | 'phone_verified' | 'id_verified' | 'skill_verified';
   registeredAt: string;
 }
 
@@ -36,9 +40,11 @@ interface WorkerRegistration {
 
 interface FormState {
   category: ServiceCategoryId | "";
+  categories: string[];
   experience: string;
   phone: string;
   city: string;
+  locality: string;
   bio: string;
 }
 
@@ -48,9 +54,11 @@ type FormErrors = Partial<Record<keyof FormState, string>>;
 
 const INITIAL: FormState = {
   category: "",
+  categories: [],
   experience: "",
   phone: "",
   city: "",
+  locality: "",
   bio: "",
 };
 
@@ -88,11 +96,13 @@ const BecomeWorker = () => {
 
   const validate = (): boolean => {
     const e: FormErrors = {};
-    if (!form.category) e.category = "Please select a service category.";
+    if (!form.categories || form.categories.length === 0)
+      e.category = "Please select at least one service category.";
     if (!form.experience.trim()) e.experience = "Experience is required.";
     if (!form.phone.trim() || !/^[6-9]\d{9}$/.test(form.phone.trim()))
       e.phone = "Enter a valid 10-digit Indian mobile number.";
     if (!form.city.trim()) e.city = "City is required.";
+    if (!form.locality.trim()) e.locality = "Locality / Society is required.";
     if (!form.bio.trim() || form.bio.trim().length < 30)
       e.bio = "Bio must be at least 30 characters.";
     setErrors(e);
@@ -110,11 +120,15 @@ const BecomeWorker = () => {
       // 1. Write worker-specific data to workers/{uid}
       const workerData: WorkerRegistration = {
         uid: user.uid,
-        category: form.category as ServiceCategoryId,
+        category: (form.categories[0] || form.category) as ServiceCategoryId,
+        categories: form.categories,
         experience: form.experience.trim(),
         phone: form.phone.trim(),
         city: form.city.trim(),
+        locality: form.locality.trim(),
         bio: form.bio.trim(),
+        isVerified: false,
+        verificationStatus: "unverified",
         registeredAt: new Date().toISOString(),
       };
       await set(ref(database, `workers/${user.uid}`), workerData);
@@ -201,35 +215,49 @@ const BecomeWorker = () => {
 
                 {/* Service Category */}
                 <div>
-                  <label
-                    htmlFor="bw-category"
-                    className="mb-1.5 flex items-center gap-2 text-sm font-medium"
-                  >
+                  <label className="mb-2 flex items-center gap-2 text-sm font-medium">
                     <Briefcase className="h-4 w-4 text-primary" />
-                    Service Category
+                    Service Categories (Select all that apply)
                   </label>
-                  <div className="relative">
-                    <select
-                      id="bw-category"
-                      value={form.category}
-                      onChange={(e) =>
-                        set_("category", e.target.value as ServiceCategoryId)
-                      }
-                      className="w-full appearance-none rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none ring-ring transition focus:ring-2 disabled:opacity-50"
-                    >
-                      <option value="" disabled>
-                        Select a category…
-                      </option>
-                      {SERVICE_CATEGORIES.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {SERVICE_CATEGORIES.map((c) => {
+                      const isSelected = form.categories?.includes(c.id);
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            const current = form.categories || [];
+                            const next = current.includes(c.id)
+                              ? current.filter((x) => x !== c.id)
+                              : [...current, c.id];
+                            set_("categories", next);
+                            set_("category", (next[0] || "") as ServiceCategoryId | "");
+                          }}
+                          className={`flex items-center gap-3 rounded-xl border p-3.5 text-left text-sm font-semibold transition-all duration-200 ${
+                            isSelected
+                              ? "border-primary bg-primary/5 text-primary shadow-sm"
+                              : "border-border bg-background hover:bg-muted/40 hover:border-gray-300"
+                          }`}
+                        >
+                          <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all ${
+                            isSelected
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-muted-foreground/40 bg-transparent"
+                          }`}>
+                            {isSelected && (
+                              <svg className="h-3 w-3 fill-none stroke-current stroke-[3px]" viewBox="0 0 24 24">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </span>
+                          <span>{c.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                   {errors.category && (
-                    <p className="mt-1 text-xs text-destructive">{errors.category}</p>
+                    <p className="mt-2 text-xs text-destructive">{errors.category}</p>
                   )}
                 </div>
 
@@ -286,26 +314,49 @@ const BecomeWorker = () => {
                   )}
                 </div>
 
-                {/* City */}
-                <div>
-                  <label
-                    htmlFor="bw-city"
-                    className="mb-1.5 flex items-center gap-2 text-sm font-medium"
-                  >
-                    <MapPin className="h-4 w-4 text-primary" />
-                    City
-                  </label>
-                  <input
-                    id="bw-city"
-                    type="text"
-                    placeholder="e.g. Mumbai, Pune, Delhi…"
-                    value={form.city}
-                    onChange={(e) => set_("city", e.target.value)}
-                    className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none ring-ring transition placeholder:text-muted-foreground/60 focus:ring-2"
-                  />
-                  {errors.city && (
-                    <p className="mt-1 text-xs text-destructive">{errors.city}</p>
-                  )}
+                {/* City & Locality */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="bw-city"
+                      className="mb-1.5 flex items-center gap-2 text-sm font-medium"
+                    >
+                      <MapPin className="h-4 w-4 text-primary" />
+                      City
+                    </label>
+                    <input
+                      id="bw-city"
+                      type="text"
+                      placeholder="e.g. Mumbai, Pune, Delhi…"
+                      value={form.city}
+                      onChange={(e) => set_("city", e.target.value)}
+                      className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none ring-ring transition placeholder:text-muted-foreground/60 focus:ring-2"
+                    />
+                    {errors.city && (
+                      <p className="mt-1 text-xs text-destructive">{errors.city}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="bw-locality"
+                      className="mb-1.5 flex items-center gap-2 text-sm font-medium"
+                    >
+                      <MapPin className="h-4 w-4 text-primary" />
+                      Locality / Society
+                    </label>
+                    <input
+                      id="bw-locality"
+                      type="text"
+                      placeholder="e.g. Gokuldham Society…"
+                      value={form.locality}
+                      onChange={(e) => set_("locality", e.target.value)}
+                      className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none ring-ring transition placeholder:text-muted-foreground/60 focus:ring-2"
+                    />
+                    {errors.locality && (
+                      <p className="mt-1 text-xs text-destructive">{errors.locality}</p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Bio */}

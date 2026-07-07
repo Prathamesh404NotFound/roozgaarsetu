@@ -15,6 +15,7 @@ const ClientProfile = () => {
     displayName: profile?.displayName ?? "",
     phone:       profile?.phone ?? "",
     city:        profile?.city ?? "",
+    locality:    (profile as any)?.locality ?? "",
   });
   const [errors, setErrors]   = useState<FormErrors>({});
   const [saving, setSaving]   = useState(false);
@@ -27,6 +28,7 @@ const ClientProfile = () => {
         displayName: profile.displayName,
         phone:       profile.phone ?? "",
         city:        profile.city ?? "",
+        locality:    (profile as any).locality ?? "",
       });
     }
   }, [profile]);
@@ -55,6 +57,7 @@ const ClientProfile = () => {
         displayName: form.displayName.trim(),
         phone:       form.phone.trim() || null,
         city:        form.city.trim() || null,
+        locality:    form.locality.trim() || null,
         updatedAt:   new Date().toISOString(),
       });
       setSaved(true);
@@ -148,19 +151,35 @@ const ClientProfile = () => {
                   {errors.phone && <p className="mt-1 text-xs text-destructive">{errors.phone}</p>}
                 </div>
 
-                {/* City */}
-                <div>
-                  <label htmlFor="cp-city" className="mb-1.5 flex items-center gap-2 text-sm font-medium">
-                    <MapPin className="h-4 w-4 text-primary" /> City (optional)
-                  </label>
-                  <input
-                    id="cp-city"
-                    type="text"
-                    value={form.city}
-                    onChange={(e) => set_("city", e.target.value)}
-                    placeholder="e.g. Mumbai"
-                    className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none ring-ring transition focus:ring-2"
-                  />
+                {/* City & Locality */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="cp-city" className="mb-1.5 flex items-center gap-2 text-sm font-medium">
+                      <MapPin className="h-4 w-4 text-primary" /> City
+                    </label>
+                    <input
+                      id="cp-city"
+                      type="text"
+                      value={form.city}
+                      onChange={(e) => set_("city", e.target.value)}
+                      placeholder="e.g. Mumbai"
+                      className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none ring-ring transition focus:ring-2"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="cp-locality" className="mb-1.5 flex items-center gap-2 text-sm font-medium">
+                      <MapPin className="h-4 w-4 text-primary" /> Locality / Society
+                    </label>
+                    <input
+                      id="cp-locality"
+                      type="text"
+                      value={form.locality}
+                      onChange={(e) => set_("locality", e.target.value)}
+                      placeholder="e.g. Gokuldham Society"
+                      className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none ring-ring transition focus:ring-2"
+                    />
+                  </div>
                 </div>
 
                 <button

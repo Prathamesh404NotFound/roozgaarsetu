@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Phone, MessageCircle, Briefcase, User, LogOut, LayoutDashboard, Settings, LogIn } from "lucide-react";
+import { Menu, X, Phone, MessageCircle, Briefcase, LogOut, LayoutDashboard, Settings, LogIn, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/Auth/AuthProvider";
@@ -13,20 +13,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useTranslation } from "react-i18next";
 
-const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/services", label: "Services" },
-  { href: "/workers", label: "Find Help" },
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
+// ── Helper: derive initials from a display name ───────────────────────────────
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return (parts[0]?.[0] ?? "U").toUpperCase();
+}
+
+// ── Language config ────────────────────────────────────────────────────────────
+const LANGS = [
+  { code: "en", label: "EN", full: "English" },
+  { code: "hi", label: "हिं", full: "हिंदी" },
+  { code: "mr", label: "मर", full: "मराठी" },
 ];
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { profile, loginWithGoogle, logout } = useAuth();
+  const { t, i18n } = useTranslation();
 
   const isClient = profile?.role === "client";
   const isWorker = profile?.role === "worker";
@@ -43,32 +50,59 @@ export const Header = () => {
     return "/profile/client";
   };
 
+  const changeLanguage = (code: string) => {
+    i18n.changeLanguage(code);
+    localStorage.setItem("rs_lang", code);
+  };
+
+  const currentLang = LANGS.find((l) => l.code === i18n.language) ?? LANGS[0];
+
+  const navLinks = [
+    { href: "/", label: t("nav.home") },
+    { href: "/services", label: t("nav.services") },
+    { href: "/workers", label: t("nav.findHelp") },
+    { href: "/about", label: t("nav.about") },
+    { href: "/contact", label: t("nav.contact") },
+  ];
+
+  // Initials avatar component
+  const InitialsAvatar = ({ className = "" }: { className?: string }) => (
+    <div
+      className={cn(
+        "flex items-center justify-center rounded-full bg-primary font-heading font-bold text-primary-foreground select-none",
+        className
+      )}
+    >
+      {getInitials(profile?.displayName ?? "U")}
+    </div>
+  );
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+      <div className="container flex h-16 items-center justify-between gap-2">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2 shrink-0">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
             <span className="font-heading text-lg font-bold text-primary-foreground">R</span>
           </div>
           <div className="flex flex-col">
-            <span className="font-heading text-lg font-bold leading-tight text-primary">
+            <span className="font-heading text-base sm:text-lg font-bold leading-tight text-primary">
               RoozgaarSetu
             </span>
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            <span className="hidden sm:block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               Professional Network
             </span>
           </div>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1 lg:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               to={link.href}
               className={cn(
-                "rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/5 hover:text-primary",
+                "rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-primary/5 hover:text-primary",
                 location.pathname === link.href
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground"
@@ -80,13 +114,13 @@ export const Header = () => {
         </nav>
 
         {/* Desktop Actions */}
-        <div className="hidden items-center gap-4 md:flex">
+        <div className="hidden items-center gap-3 md:flex">
           <a
             href="tel:+919876543210"
             className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
           >
             <Phone className="h-4 w-4" />
-            <span className="hidden lg:inline">Call Us</span>
+            <span className="hidden lg:inline">{t("nav.callUs")}</span>
           </a>
           <a
             href="https://wa.me/919876543210"
@@ -98,23 +132,46 @@ export const Header = () => {
             <span className="hidden lg:inline">WhatsApp</span>
           </a>
 
+          {/* Language Toggle */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-bold text-muted-foreground hover:bg-muted/40 transition">
+                <Globe className="h-3.5 w-3.5" />
+                {currentLang.label}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-36 rounded-xl">
+              {LANGS.map((lang) => (
+                <DropdownMenuItem
+                  key={lang.code}
+                  onClick={() => changeLanguage(lang.code)}
+                  className={cn(
+                    "cursor-pointer text-sm",
+                    i18n.language === lang.code && "font-bold text-primary"
+                  )}
+                >
+                  <span className="mr-2 font-bold w-6 inline-block">{lang.label}</span>
+                  {lang.full}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {profile ? (
             <>
-              {/* Become a Worker — visible only for clients */}
               {isClient && (
                 <Link
                   to="/become-worker"
-                  className="flex items-center gap-1.5 rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+                  className="hidden xl:flex items-center gap-1.5 rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
                 >
                   <Briefcase className="h-4 w-4" />
-                  Become a Worker
+                  {t("nav.becomeWorker")}
                 </Link>
               )}
 
-              {/* Book Now Button */}
               {isClient && (
-                <Button asChild>
-                  <Link to="/booking">Book Now</Link>
+                <Button asChild size="sm">
+                  <Link to="/booking">{t("nav.bookNow")}</Link>
                 </Button>
               )}
 
@@ -122,12 +179,7 @@ export const Header = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="relative h-9 w-9 rounded-full outline-none ring-primary/20 transition hover:ring-4 focus-visible:ring-4">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={profile.photoURL} alt={profile.displayName} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                        {(profile.displayName ?? "U").charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+                    <InitialsAvatar className="h-9 w-9 text-sm" />
                   </button>
                 </DropdownMenuTrigger>
 
@@ -141,30 +193,27 @@ export const Header = () => {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
 
-                  {/* Dashboard link */}
                   <DropdownMenuItem asChild>
                     <Link to={getDashboardHref()} className="flex items-center gap-2 cursor-pointer">
                       <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
-                      <span>{isAdmin ? "Admin Panel" : "Dashboard"}</span>
+                      <span>{isAdmin ? t("nav.adminPanel") : t("nav.dashboard")}</span>
                     </Link>
                   </DropdownMenuItem>
 
-                  {/* Client Become Worker flow */}
                   {isClient && (
                     <DropdownMenuItem asChild>
                       <Link to="/become-worker" className="flex items-center gap-2 cursor-pointer">
                         <Briefcase className="h-4 w-4 text-muted-foreground" />
-                        <span>Become a Worker</span>
+                        <span>{t("nav.becomeWorker")}</span>
                       </Link>
                     </DropdownMenuItem>
                   )}
 
-                  {/* Profile link — not needed for admin */}
                   {!isAdmin && (
                     <DropdownMenuItem asChild>
                       <Link to={getProfileHref()} className="flex items-center gap-2 cursor-pointer">
                         <Settings className="h-4 w-4 text-muted-foreground" />
-                        <span>Profile Settings</span>
+                        <span>{t("nav.profileSettings")}</span>
                       </Link>
                     </DropdownMenuItem>
                   )}
@@ -175,26 +224,51 @@ export const Header = () => {
                     className="flex items-center gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
                   >
                     <LogOut className="h-4 w-4" />
-                    <span>Log out</span>
+                    <span>{t("nav.logout")}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </>
           ) : (
-            <Button onClick={() => loginWithGoogle()} className="flex items-center gap-2">
+            <Button onClick={() => loginWithGoogle()} className="flex items-center gap-2" size="sm">
               <LogIn className="h-4 w-4" />
-              Sign in with Google
+              <span className="hidden sm:inline">{t("nav.signIn")}</span>
+              <span className="sm:hidden">Sign In</span>
             </Button>
           )}
         </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex h-10 w-10 items-center justify-center rounded-lg md:hidden"
-        >
-          {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
+        {/* Mobile: language + hamburger */}
+        <div className="flex items-center gap-2 md:hidden">
+          {/* Compact language toggle on mobile */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-1 rounded-lg border border-border px-2 py-1.5 text-xs font-bold text-muted-foreground hover:bg-muted/40 transition">
+                <Globe className="h-3.5 w-3.5" />
+                {currentLang.label}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32 rounded-xl">
+              {LANGS.map((lang) => (
+                <DropdownMenuItem
+                  key={lang.code}
+                  onClick={() => changeLanguage(lang.code)}
+                  className={cn("cursor-pointer text-sm", i18n.language === lang.code && "font-bold text-primary")}
+                >
+                  <span className="mr-2 font-bold">{lang.label}</span> {lang.full}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg"
+            aria-label="Toggle menu"
+          >
+            {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
@@ -226,9 +300,13 @@ export const Header = () => {
               <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
                 {profile ? (
                   <>
-                    {/* Role Label */}
-                    <div className="px-4 py-1.5 text-xs font-semibold uppercase text-primary bg-primary/5 rounded-lg text-center">
-                      Logged in as: {profile.role}
+                    {/* User info */}
+                    <div className="flex items-center gap-3 px-2 py-1">
+                      <InitialsAvatar className="h-10 w-10 text-sm shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate">{profile.displayName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{t("nav.loggedInAs")} {profile.role}</p>
+                      </div>
                     </div>
 
                     {/* Dashboard Link */}
@@ -238,10 +316,9 @@ export const Header = () => {
                       className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-2.5 text-sm font-medium hover:bg-muted/55 transition-colors"
                     >
                       <LayoutDashboard className="h-4 w-4" />
-                      {isAdmin ? "Admin Panel" : "Dashboard"}
+                      {isAdmin ? t("nav.adminPanel") : t("nav.dashboard")}
                     </Link>
 
-                    {/* Become a Worker — mobile, clients only */}
                     {isClient && (
                       <Link
                         to="/become-worker"
@@ -249,11 +326,10 @@ export const Header = () => {
                         className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary py-2.5 text-sm font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
                       >
                         <Briefcase className="h-4 w-4" />
-                        Become a Worker
+                        {t("nav.becomeWorker")}
                       </Link>
                     )}
 
-                    {/* Profile settings */}
                     {!isAdmin && (
                       <Link
                         to={getProfileHref()}
@@ -261,42 +337,34 @@ export const Header = () => {
                         className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-2.5 text-sm font-medium hover:bg-muted/55 transition-colors"
                       >
                         <Settings className="h-4 w-4" />
-                        Profile Settings
+                        {t("nav.profileSettings")}
                       </Link>
                     )}
 
-                    {/* Book Now */}
                     {isClient && (
                       <Button asChild className="w-full">
                         <Link to="/booking" onClick={() => setIsOpen(false)}>
-                          Book Now
+                          {t("nav.bookNow")}
                         </Link>
                       </Button>
                     )}
 
-                    {/* Logout */}
                     <Button
                       variant="destructive"
-                      onClick={() => {
-                        setIsOpen(false);
-                        logout();
-                      }}
+                      onClick={() => { setIsOpen(false); logout(); }}
                       className="w-full"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
-                      Log out
+                      {t("nav.logout")}
                     </Button>
                   </>
                 ) : (
                   <Button
-                    onClick={() => {
-                      setIsOpen(false);
-                      loginWithGoogle();
-                    }}
+                    onClick={() => { setIsOpen(false); loginWithGoogle(); }}
                     className="w-full"
                   >
                     <LogIn className="mr-2 h-4 w-4" />
-                    Sign in with Google
+                    {t("nav.signIn")}
                   </Button>
                 )}
 
@@ -306,7 +374,7 @@ export const Header = () => {
                     className="flex flex-1 items-center justify-center gap-2 rounded-md border border-border py-2.5 text-sm font-medium"
                   >
                     <Phone className="h-4 w-4" />
-                    Call
+                    {t("nav.callUs")}
                   </a>
                   <a
                     href="https://wa.me/919876543210"

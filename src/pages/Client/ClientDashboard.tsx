@@ -1,26 +1,47 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ref, get, query, orderByChild, equalTo } from "firebase/database";
-import { CalendarDays, Clock, CheckCircle2, XCircle, Loader2, User } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { ref, get, query, orderByChild, equalTo, update } from "firebase/database";
+import {
+  CalendarDays, Clock, CheckCircle2, Loader2, User, CreditCard,
+  Lock, AlertTriangle, ShieldCheck, HelpCircle, Wallet
+} from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { database } from "@/lib/firebase";
-import type { Booking, BookingStatus } from "@/types";
+import type { Booking, BookingStatus, PaymentStatus } from "@/types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }> = {
-  pending:   { label: "Pending",   className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-  accepted:  { label: "Accepted",  className: "bg-blue-100 text-blue-700 border-blue-200" },
-  completed: { label: "Completed", className: "bg-green-100 text-green-700 border-green-200" },
-  declined:  { label: "Declined",  className: "bg-red-100 text-red-700 border-red-200" },
+  pending:   { label: "Pending",   className: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+  accepted:  { label: "Approved",  className: "bg-blue-50 text-blue-700 border-blue-200" },
+  completed: { label: "Completed", className: "bg-green-50 text-green-700 border-green-200" },
+  declined:  { label: "Declined",  className: "bg-red-50 text-red-700 border-red-200" },
+};
+
+const PAYMENT_STATUS_CONFIG: Record<PaymentStatus, { label: string; className: string }> = {
+  pending:   { label: "Awaiting Pay", className: "bg-muted text-muted-foreground border-border" },
+  held:      { label: "Escrow Held", className: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+  released:  { label: "Released",    className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  refunded:  { label: "Refunded",    className: "bg-zinc-100 text-zinc-600 border-zinc-200" },
+  disputed:  { label: "Disputed",    className: "bg-amber-50 text-amber-700 border-amber-200" },
 };
 
 const StatusBadge = ({ status }: { status: BookingStatus }) => {
   const cfg = STATUS_CONFIG[status];
   return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${cfg.className}`}>
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${cfg.className}`}>
+      {cfg.label}
+    </span>
+  );
+};
+
+const PaymentStatusBadge = ({ status }: { status: PaymentStatus }) => {
+  const cfg = PAYMENT_STATUS_CONFIG[status] || { label: "Unknown", className: "bg-muted text-muted-foreground" };
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${cfg.className}`}>
+      <Lock className="h-3 w-3 inline" />
       {cfg.label}
     </span>
   );
@@ -33,7 +54,12 @@ const ClientDashboard = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  // Modal payment state triggers
+  const [paymentModalBooking, setPaymentModalBooking] = useState<Booking | null>(null);
+  const [payingState, setPayingState] = useState<"idle" | "processing" | "success">("idle");
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  const fetchBookings = () => {
     if (!user) return;
     const q = query(
       ref(database, "bookings"),
@@ -43,13 +69,116 @@ const ClientDashboard = () => {
     get(q).then((snap) => {
       if (snap.exists()) {
         const data = snap.val() as Record<string, Booking>;
-        const list = Object.entries(data).map(([id, b]) => ({ ...b, id }));
+        const list = Object.entries(data).map(([id, b]) => ({
+          ...b,
+          id,
+          paymentStatus: b.paymentStatus || "pending",
+        }));
         list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
         setBookings(list);
+      } else {
+        setBookings([]);
       }
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    fetchBookings();
   }, [user]);
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
+  
+  // Simulated checkout and escrow hold placement
+  const triggerEscrowPayment = async () => {
+    if (!paymentModalBooking || !user) return;
+    
+    setPayingState("processing");
+
+    // MOCK PAYMENT GATEWAY PROCESS
+    // Razorpay Standard sandbox gateway trigger.
+    /*
+      TODO: Replace with actual Razorpay script integration later.
+      const rzpOptions = {
+        key: 'rzp_test_YOUR_KEY', 
+        amount: paymentModalBooking.amount * 100, // Paisa conversion
+        currency: 'INR',
+        name: 'RoozgaarSetu Escrow Ltd',
+        handler: async (response) => { ... }
+      };
+      const rzp = new (window as any).Razorpay(rzpOptions);
+      rzp.open();
+    */
+
+    setTimeout(async () => {
+      try {
+        const updates = {
+          paymentStatus: "held" as PaymentStatus,
+          updatedAt: new Date().toISOString(),
+        };
+
+        await update(ref(database, `bookings/${paymentModalBooking.id}`), updates);
+        
+        setPayingState("success");
+        setTimeout(() => {
+          setPaymentModalBooking(null);
+          setPayingState("idle");
+          fetchBookings();
+        }, 1500);
+
+      } catch (err) {
+        console.error("Escrow hold write failed:", err);
+        setPayingState("idle");
+      }
+    }, 2000);
+  };
+
+  // Release payment in escrow to worker
+  const handleReleasePayment = async (b: Booking) => {
+    if (!confirm("Are you sure you want to mark this job complete and release the funds to the worker? This action is irreversible.")) return;
+    
+    setActionLoadingId(b.id);
+    try {
+      const updates = {
+        status: "completed" as BookingStatus,
+        paymentStatus: "released" as PaymentStatus,
+        updatedAt: new Date().toISOString(),
+      };
+      
+      await update(ref(database, `bookings/${b.id}`), updates);
+      fetchBookings();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // Dispute payment in escrow
+  const handleDisputePayment = async (b: Booking) => {
+    const reason = prompt("Please state the reason/dispute details for our admin team to review:");
+    if (reason === null) return; // cancelled
+    if (!reason.trim()) {
+      alert("A dispute reason is required to lock escrow funds.");
+      return;
+    }
+
+    setActionLoadingId(b.id);
+    try {
+      const updates = {
+        paymentStatus: "disputed" as PaymentStatus,
+        notes: `${b.notes || ""}\n[DISPUTE REASON]: ${reason.trim()}`,
+        updatedAt: new Date().toISOString(),
+      };
+      
+      await update(ref(database, `bookings/${b.id}`), updates);
+      fetchBookings();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   // ── Summary counts ─────────────────────────────────────────────────────────
   const counts = {
@@ -102,7 +231,7 @@ const ClientDashboard = () => {
           {[
             { label: "Total Bookings",     value: counts.total,     icon: CalendarDays, color: "text-primary" },
             { label: "Pending",            value: counts.pending,   icon: Clock,        color: "text-yellow-600" },
-            { label: "Accepted",           value: counts.accepted,  icon: CheckCircle2, color: "text-blue-600" },
+            { label: "Accepted/Approved",  value: counts.accepted,  icon: ShieldCheck,  color: "text-blue-600" },
             { label: "Completed",          value: counts.completed, icon: CheckCircle2, color: "text-green-600" },
           ].map(({ label, value, icon: Icon, color }) => (
             <div key={label} className="flex flex-col gap-1 px-6 py-5">
@@ -150,7 +279,7 @@ const ClientDashboard = () => {
               initial="hidden"
               animate="visible"
               variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
-              className="space-y-3"
+              className="space-y-4"
             >
               {bookings.map((b) => (
                 <motion.div
@@ -159,29 +288,87 @@ const ClientDashboard = () => {
                     hidden: { opacity: 0, y: 12 },
                     visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
                   }}
-                  className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 shadow-brand transition hover:shadow-card-hover sm:flex-row sm:items-center"
+                  className="rounded-2xl border border-border bg-card shadow-brand transition hover:shadow-card-hover"
                 >
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-foreground capitalize">{b.category}</span>
-                      <StatusBadge status={b.status} />
+                  <Link to={`/booking/${b.id}`} className="block p-5 pb-3">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium text-foreground capitalize">{b.category}</span>
+                        <StatusBadge status={b.status} />
+                        <PaymentStatusBadge status={b.paymentStatus || "pending"} />
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Worker: <span className="font-medium text-foreground">{b.workerName}</span>
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Worker: <span className="font-medium text-foreground">{b.workerName}</span>
-                    </p>
-                    {b.notes && (
-                      <p className="text-sm text-muted-foreground line-clamp-1">{b.notes}</p>
-                    )}
+                    <div className="flex flex-col items-end gap-1 text-right">
+                      <p className="text-sm font-medium text-foreground">
+                        {new Date(b.date).toLocaleDateString("en-IN", {
+                          day: "numeric", month: "short", year: "numeric",
+                        })}
+                      </p>
+                      {b.amount && (
+                        <p className="text-sm font-bold text-primary">₹{b.amount}</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1 text-right">
-                    <p className="text-sm font-medium text-foreground">
-                      {new Date(b.date).toLocaleDateString("en-IN", {
-                        day: "numeric", month: "short", year: "numeric",
-                      })}
-                    </p>
-                    {b.amount && (
-                      <p className="text-sm font-semibold text-primary">₹{b.amount}</p>
+                  </Link>
+
+                  {/* Actions & Escrow Logic controls */}
+                  <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border px-5 py-3">
+                    {/* Scenario A: Booking is accepted but escrow payment has not been made */}
+                    {b.status === "accepted" && b.paymentStatus === "pending" && (
+                      <button
+                        onClick={() => setPaymentModalBooking(b)}
+                        className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition"
+                      >
+                        <CreditCard className="h-3.5 w-3.5" />
+                        Pay Escrow hold (₹{b.amount})
+                      </button>
                     )}
+
+                    {/* Scenario B: Escrow hold is active - show completion release and dispute controls */}
+                    {b.paymentStatus === "held" && (
+                      <>
+                        <button
+                          disabled={actionLoadingId === b.id}
+                          onClick={() => handleDisputePayment(b)}
+                          className="flex items-center gap-1.5 rounded-lg border border-amber-300 text-amber-700 bg-amber-50 px-4 py-2 text-xs font-semibold hover:bg-amber-100/50 disabled:opacity-50 transition"
+                        >
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          Raise a Dispute
+                        </button>
+                        <button
+                          disabled={actionLoadingId === b.id}
+                          onClick={() => handleReleasePayment(b)}
+                          className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition"
+                        >
+                          {actionLoadingId === b.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          )}
+                          Release Payment
+                        </button>
+                      </>
+                    )}
+
+                    {b.paymentStatus === "disputed" && (
+                      <span className="text-xs text-amber-600 font-semibold flex items-center gap-1 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
+                        <AlertTriangle className="h-3.5 w-3.5" /> Dispute filed. Under review by support.
+                      </span>
+                    )}
+
+                    {b.status === "pending" && (
+                      <span className="text-xs text-muted-foreground italic bg-muted/40 px-3 py-1.5 rounded-lg">
+                        Waiting for worker to accept booking...
+                      </span>
+                    )}
+
+                    <Link to={`/booking/${b.id}`} className="text-xs text-primary underline font-semibold ml-auto">
+                      View details →
+                    </Link>
                   </div>
                 </motion.div>
               ))}
@@ -189,6 +376,87 @@ const ClientDashboard = () => {
           )}
         </div>
       </section>
+
+      {/* Escrow simulated payment dialog */}
+      <AnimatePresence>
+        {paymentModalBooking && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl"
+            >
+              <h3 className="font-heading text-lg font-bold text-foreground mb-1 flex items-center gap-2">
+                <Wallet className="h-5 w-5 text-indigo-600" />
+                Escrow Hold Deposit
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Funds are held secure by RoozgaarSetu and released to the worker only when you approve completion.
+              </p>
+
+              {payingState === "idle" && (
+                <div className="space-y-4">
+                  <div className="rounded-xl bg-indigo-50/50 border border-indigo-100 p-4 text-sm space-y-2 text-indigo-900">
+                    <div className="flex justify-between font-medium">
+                      <span>Service Charge:</span>
+                      <span>₹{paymentModalBooking.amount - 100}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-indigo-700">
+                      <span>Platform Trust Guard / Escrow:</span>
+                      <span>₹100</span>
+                    </div>
+                    <div className="border-t border-indigo-200 my-1 pt-2 flex justify-between font-bold text-base">
+                      <span>Total Hold Amount:</span>
+                      <span>₹{paymentModalBooking.amount}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setPaymentModalBooking(null)}
+                      className="flex-1 rounded-xl border border-border py-3 text-xs font-bold hover:bg-muted transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={triggerEscrowPayment}
+                      className="flex-1 rounded-xl bg-indigo-600 text-white font-bold py-3 text-xs hover:bg-indigo-700 transition"
+                    >
+                      Deposit & Hold Funds
+                    </button>
+                  </div>
+
+                  <p className="text-[10px] text-center text-muted-foreground italic">
+                    * Sandbox simulation mode active. No actual transactions will occur.
+                  </p>
+                </div>
+              )}
+
+              {payingState === "processing" && (
+                <div className="py-8 flex flex-col items-center justify-center text-center space-y-3">
+                  <Loader2 className="h-10 w-10 text-indigo-600 animate-spin" />
+                  <p className="text-sm font-semibold">Simulating checkout payment...</p>
+                  <p className="text-xs text-muted-foreground max-w-sm px-4">
+                    Writing token metadata, verification checksum and locking escrow funds.
+                  </p>
+                </div>
+              )}
+
+              {payingState === "success" && (
+                <div className="py-8 flex flex-col items-center justify-center text-center space-y-3">
+                  <CheckCircle2 className="h-12 w-12 text-emerald-500 animate-bounce" />
+                  <p className="text-sm font-bold text-emerald-600">Escrow Hold Locked!</p>
+                  <p className="text-xs text-muted-foreground">
+                    Receipt matches reference number {paymentModalBooking.id}
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </Layout>
   );
 };

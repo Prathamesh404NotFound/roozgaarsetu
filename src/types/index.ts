@@ -7,8 +7,12 @@ export interface UserProfile {
   photoURL?: string;
   phone?: string;
   city?: string;
+  locality?: string;
   role: 'client' | 'worker' | 'admin';
   isVerified: boolean;
+  verificationStatus?: 'unverified' | 'phone_verified' | 'id_verified' | 'skill_verified';
+  category?: string; // Tagged primary service category for workers
+  categories?: string[]; // Tagged skills/categories for workers
   createdAt: Date;
   lastLoginAt: Date;
 }
@@ -16,6 +20,7 @@ export interface UserProfile {
 // ─── Bookings ─────────────────────────────────────────────────────────────────
 
 export type BookingStatus = 'pending' | 'accepted' | 'completed' | 'declined';
+export type PaymentStatus = 'pending' | 'held' | 'released' | 'refunded' | 'disputed';
 
 export interface Booking {
   id: string;
@@ -27,21 +32,35 @@ export interface Booking {
   date: string;          // ISO string
   notes?: string;
   status: BookingStatus;
+  paymentStatus?: PaymentStatus;
   createdAt: string;
   updatedAt: string;
   amount?: number;
+  locality?: string;
+  urgent?: boolean;
+  voiceNoteBase64?: string;
+  latitude?: number;     // Latitude coordinate
+  longitude?: number;    // Longitude coordinate
+  payoutType?: 'instant' | 'standard';
+  payoutFeeDeduction?: number;
+  actualPayoutAmount?: number;
 }
 
 // ─── Worker profile (workers/{uid} node) ──────────────────────────────────────
 
 export interface WorkerRecord {
   uid: string;
-  category: string;
+  category: string;      // Primary service category
+  categories?: string[]; // Tagged skills/categories
   experience: string;
   phone: string;
   city: string;
+  locality?: string;
   bio: string;
   availability: boolean;
   isVerified: boolean;
+  verificationStatus?: 'unverified' | 'phone_verified' | 'id_verified' | 'skill_verified';
+  idDocumentUrl?: string; // Doc uploaded by worker in verification portal
   registeredAt: string;
 }
+

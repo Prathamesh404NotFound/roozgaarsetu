@@ -1,6 +1,10 @@
 import { motion } from "framer-motion";
-import { Users, Target, Heart, Award, Linkedin, Twitter, Mail } from "lucide-react";
+import { Users, Target, Heart, Award } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
+import { FoundersSection } from "@/components/sections/FoundersSection";
+import { FeaturesSection } from "@/components/sections/FeaturesSection";
+import { HowItWorksSection } from "@/components/sections/HowItWorksSection";
+import { TrustSection } from "@/components/sections/TrustSection";
 import teamData from "@/data/team.json";
 
 const values = [
@@ -55,11 +59,14 @@ const About = () => {
             transition={{ duration: 0.5 }}
             className="mx-auto max-w-3xl text-center"
           >
+            <span className="mb-4 inline-block rounded-full bg-white/10 px-4 py-1.5 text-sm font-medium text-gold">
+              Get to Know Us
+            </span>
             <h1 className="mb-4 font-heading text-3xl font-bold text-white md:text-5xl">
               About RoozgaarSetu
             </h1>
             <p className="text-lg text-white/80">
-              Connecting Professionals and Opportunities. We're on a mission to transform how people build their careers through trusted networking.
+              Connecting Professionals and Opportunities. We are dedicated to building Kolhapur's leading peer-to-peer ecosystem for gig work and domestic help services.
             </p>
           </motion.div>
         </div>
@@ -81,16 +88,25 @@ const About = () => {
               <h2 className="mb-6 font-heading text-2xl font-bold md:text-3xl">
                 Building Professional Networks
               </h2>
-              <p className="text-lg text-muted-foreground">
-                Finding the right professional opportunities has always been a challenge. At RoozgaarSetu, we're solving this by creating a platform that prioritizes verification, transparency, and quality. We believe every professional deserves growth opportunities, and every business deserves access to verified talent.
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Finding the right professional opportunities has always been a challenge due to lack of trust and verified connections. At RoozgaarSetu, we're solving this by creating a secure platform that prioritizes multi-level verification, transparency, and top-tier service. We believe every local helper deserves career growth, and every client deserves access to verified talent.
               </p>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Values */}
-      <section className="bg-secondary/5 py-16 lg:py-24">
+      {/* Platform Features Explainer */}
+      <FeaturesSection />
+
+      {/* Detailed How It Works Walkthrough */}
+      <HowItWorksSection />
+
+      {/* Detailed Trust & Verification Rationale */}
+      <TrustSection />
+
+      {/* Corporate Values */}
+      <section className="bg-secondary/5 py-16 lg:py-24 animate-in">
         <div className="container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -100,7 +116,7 @@ const About = () => {
             className="mb-12 text-center"
           >
             <span className="mb-4 inline-block rounded-full bg-accent/10 px-4 py-1.5 text-sm font-medium text-accent">
-              Our Values
+              Our Core Ethos
             </span>
             <h2 className="font-heading text-2xl font-bold md:text-3xl">
               What Drives Us
@@ -133,22 +149,27 @@ const About = () => {
         </div>
       </section>
 
+      {/* founders Section */}
+      <FoundersSection />
+
       {/* Developer Company */}
       <section className="border-t border-border bg-secondary/5 py-16">
         <div className="container">
           <div className="mx-auto max-w-2xl text-center">
             <p className="mb-2 text-sm text-muted-foreground">Developed by</p>
             <h3 className="mb-2 font-heading text-xl font-bold">
-              {teamData.developerCompany.name}
+              {teamData?.developerCompany?.name ?? "Google Deepmind Team"}
             </h3>
-            <a
-              href={teamData.developerCompany.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-primary hover:underline"
-            >
-              {teamData.developerCompany.website}
-            </a>
+            {teamData?.developerCompany?.website && (
+              <a
+                href={teamData.developerCompany.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline"
+              >
+                {teamData.developerCompany.website}
+              </a>
+            )}
           </div>
         </div>
       </section>

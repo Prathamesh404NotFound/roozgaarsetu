@@ -1,13 +1,18 @@
-import { useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Calendar, Clock, MapPin, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Calendar, Clock, MapPin, ArrowRight, CheckCircle2, Zap, TrendingUp } from "lucide-react";
+import { ref, push, set, get } from "firebase/database";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/components/Auth/AuthProvider";
+import { database } from "@/lib/firebase";
+import { VoiceRecorder } from "@/components/ui/VoiceRecorder";
 import workersData from "@/data/workers.json";
+import type { Booking } from "@/types";
 
 const timeSlots = [
   "08:00 AM",
@@ -23,6 +28,7 @@ const timeSlots = [
 ];
 
 const Booking = () => {
+  const { user, profile } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const workerId = searchParams.get("worker");
@@ -35,16 +41,116 @@ const Booking = () => {
     name: "",
     phone: "",
     address: "",
+    locality: "",
     notes: "",
   });
   const [bookingId, setBookingId] = useState("");
+  const [voiceBase64, setVoiceBase64] = useState("");
+  const [urgent, setUrgent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Estimator range state
+  const [estimatorRange, setEstimatorRange] = useState<{ min: number; max: number; isHistorical: boolean } | null>(null);
+
+  // Prefill details
+  useEffect(() => {
+    if (profile || user) {
+      setFormData((prev) => ({
+        ...prev,
+        name: prev.name || profile?.displayName || user?.displayName || "",
+        phone: prev.phone || profile?.phone || "",
+        address: prev.address || profile?.city || "",
+        locality: prev.locality || (profile as any)?.locality || "",
+      }));
+    }
+  }, [profile, user]);
+
+  // Load Price Estimator statistics
+  useEffect(() => {
+    if (!worker) return;
+    const category = worker.services[0] || "general";
+
+    const PREDEFINED: Record<string, { min: number; max: number }> = {
+      cooking:   { min: 4000, max: 6000 },
+      cleaning:  { min: 3000, max: 5000 },
+      childcare: { min: 6000, max: 9000 },
+      eldercare: { min: 7000, max: 10000 },
+      laundry:   { min: 2000, max: 4000 },
+      driving:   { min: 8000, max: 12000 },
+    };
+    const fallback = PREDEFINED[category] || { min: 3000, max: 5000 };
+
+    get(ref(database, "bookings")).then((snap) => {
+      if (snap.exists()) {
+        const data = snap.val() as Record<string, Booking>;
+        const list = Object.values(data).filter(
+          (b) => b.category === category && b.status === "completed" && b.amount
+        );
+        if (list.length >= 3) {
+          const sum = list.reduce((total, curr) => total + (curr.amount || 0), 0);
+          const average = Math.round(sum / list.length);
+          setEstimatorRange({
+            min: Math.max(500, average - 300),
+            max: average + 300,
+            isHistorical: true,
+          });
+          return;
+        }
+      }
+      setEstimatorRange({
+        min: fallback.min,
+        max: fallback.max,
+        isHistorical: false,
+      });
+    }).catch(() => {
+      setEstimatorRange({
+        min: fallback.min,
+        max: fallback.max,
+        isHistorical: false,
+      });
+    });
+  }, [worker]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate booking creation
-    const id = `BKG${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-    setBookingId(id);
-    setStep(3);
+    if (!user || !worker) return;
+
+    setSubmitting(true);
+    try {
+      const bookingsRef = ref(database, "bookings");
+      const newBookingRef = push(bookingsRef);
+      const id = newBookingRef.key || `BKG${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+      const bookingDurationHours = 8;
+      const finalAmount = worker.hourlyRate * bookingDurationHours;
+
+      const bookingData = {
+        id,
+        clientId: user.uid,
+        clientName: formData.name || user.displayName || "Client",
+        workerId: worker.id,
+        workerName: worker.name,
+        category: worker.services[0] || "General Help",
+        date: `${selectedDate}T${selectedTime === "08:00 AM" ? "08:00:00" : "12:00:00"}`,
+        notes: `${formData.notes}\nAddress: ${formData.address}`,
+        status: "pending",
+        paymentStatus: "pending",
+        amount: finalAmount,
+        locality: formData.locality || null,
+        urgent,
+        voiceNoteBase64: voiceBase64 || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await set(ref(database, `bookings/${id}`), bookingData);
+      setBookingId(id);
+      setStep(3);
+    } catch (err) {
+      console.error("Booking write failed:", err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (!worker) {
@@ -169,7 +275,7 @@ const Booking = () => {
                 Your Details
               </h2>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <Label htmlFor="name">Full Name</Label>
                   <Input
@@ -181,16 +287,29 @@ const Booking = () => {
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    required
-                    placeholder="+91 98765 43210"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      required
+                      placeholder="+91 98765 43210"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="locality">Locality / Society</Label>
+                    <Input
+                      id="locality"
+                      value={formData.locality}
+                      onChange={(e) => setFormData({ ...formData, locality: e.target.value })}
+                      required
+                      placeholder="e.g. Gokuldham Society"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -204,29 +323,97 @@ const Booking = () => {
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     required
                     placeholder="Enter your complete address"
-                    rows={3}
+                    rows={2}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="notes">Special Instructions (Optional)</Label>
+                  <Label htmlFor="notes">Instructions & Speech Input</Label>
+                  <div className="mb-2.5 mt-1.5">
+                    <VoiceRecorder
+                      onTranscript={(text) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          notes: prev.notes ? prev.notes + " " + text : text,
+                        }));
+                      }}
+                      onAudioCaptured={(base64) => {
+                        setVoiceBase64(base64);
+                      }}
+                    />
+                  </div>
                   <Textarea
                     id="notes"
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Any special requirements or instructions"
+                    placeholder="Provide description or click microphone to speak..."
                     rows={2}
                   />
+                </div>
+
+                {/* Instant Price Estimator View */}
+                {estimatorRange && (
+                  <div className="rounded-xl border border-indigo-150 border-indigo-200 bg-indigo-50/20 p-4">
+                    <p className="font-heading font-semibold text-indigo-900 mb-1 flex items-center gap-1 text-xs">
+                      <TrendingUp className="h-3.5 w-3.5 text-indigo-600 animate-pulse" />
+                      Instant Price Estimator
+                    </p>
+                    <p className="text-xs text-indigo-850 text-indigo-900">
+                      Typical retainer for <span className="font-bold underline">{worker.services[0]}</span> in this area:{" "}
+                      <span className="font-bold text-sm bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded ml-1">
+                        ₹{estimatorRange.min} - ₹{estimatorRange.max}
+                      </span>
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      {estimatorRange.isHistorical
+                        ? "* Hand-calculated from actual completed bookings nearby."
+                        : "* Admin configured platform standards."}
+                    </p>
+                  </div>
+                )}
+
+                {/* Emergency Urgent Boost */}
+                <div className="flex items-start gap-3 rounded-xl border border-amber-250 border-amber-200 bg-amber-50/20 p-4 transition-all focus-within:ring-2 focus-within:ring-amber-500">
+                  <input
+                    id="urgent-boost"
+                    type="checkbox"
+                    checked={urgent}
+                    onChange={(e) => setUrgent(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                  />
+                  <div className="text-xs cursor-pointer select-none" onClick={() => setUrgent(!urgent)}>
+                    <p className="font-bold text-amber-900 flex items-center gap-1">
+                      <Zap className="h-3.5 w-3.5 text-amber-600 animate-pulse" />
+                      Emergency / Urgent Job Boost
+                    </p>
+                    <p className="text-amber-700 mt-1">
+                      Visually flags requirement inside worker networks & expands broadcast notification radius from 2km to 10km.
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 font-semibold">
+                      * Surcharge is feature-flagged off: free deployment.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Summary */}
                 <div className="rounded-lg bg-muted/30 p-4">
                   <h3 className="mb-2 font-medium">Booking Summary</h3>
-                  <div className="space-y-1 text-sm text-muted-foreground">
-                    <p><strong>Worker:</strong> {worker.name}</p>
-                    <p><strong>Date:</strong> {new Date(selectedDate).toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
-                    <p><strong>Time:</strong> {selectedTime}</p>
-                    <p><strong>Rate:</strong> ₹{worker.hourlyRate}/hr</p>
+                  <div className="grid grid-cols-2 gap-y-1 text-sm text-muted-foreground">
+                    <span className="font-semibold text-foreground">Worker:</span>
+                    <span>{worker.name}</span>
+                    <span className="font-semibold text-foreground">Scheduled Date:</span>
+                    <span>
+                      {new Date(selectedDate).toLocaleDateString("en-IN", {
+                        weekday: "short",
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                    <span className="font-semibold text-foreground">Time Slot:</span>
+                    <span>{selectedTime}</span>
+                    <span className="font-semibold text-foreground">Hourly Rate:</span>
+                    <span>₹{worker.hourlyRate}/hr</span>
                   </div>
                 </div>
 
@@ -234,8 +421,12 @@ const Booking = () => {
                   <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1">
                     Back
                   </Button>
-                  <Button type="submit" className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90">
-                    Confirm Booking
+                  <Button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
+                  >
+                    {submitting ? "Booking..." : "Confirm Booking"}
                   </Button>
                 </div>
               </form>
@@ -252,26 +443,34 @@ const Booking = () => {
               <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-success/10">
                 <CheckCircle2 className="h-10 w-10 text-success" />
               </div>
-              <h2 className="mb-2 font-heading text-2xl font-bold">Booking Confirmed!</h2>
+              <h2 className="mb-2 font-heading text-2xl font-bold">Booking Request Sent!</h2>
               <p className="mb-6 text-muted-foreground">
-                Your booking has been successfully placed. We'll send you a confirmation shortly.
+                Your request has been successfully created. You can track its progress on your dashboard or details page.
               </p>
 
               <div className="mb-8 rounded-lg bg-muted/30 p-4">
-                <p className="mb-2 text-sm text-muted-foreground">Booking Reference</p>
-                <p className="font-heading text-xl font-bold text-primary">{bookingId}</p>
+                <p className="mb-2 text-sm text-muted-foreground">Booking Reference ID</p>
+                <div className="flex flex-col gap-1 items-center">
+                  <p className="font-heading text-xl font-bold text-primary">{bookingId}</p>
+                  <Link
+                    to={`/booking/${bookingId}`}
+                    className="text-xs text-indigo-600 font-semibold hover:underline mt-1"
+                  >
+                    Track booking details & stepper →
+                  </Link>
+                </div>
               </div>
 
               <div className="space-y-3">
-                <Button onClick={() => navigate("/")} className="w-full" size="lg">
-                  Back to Home
+                <Button onClick={() => navigate("/dashboard/client")} className="w-full" size="lg">
+                  Go to Client Dashboard
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => navigate("/workers")}
                   className="w-full"
                 >
-                  Book Another Service
+                  Browse More Workers
                 </Button>
               </div>
             </motion.div>

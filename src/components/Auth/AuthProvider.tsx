@@ -34,6 +34,9 @@ function snapshotToProfile(uid: string, data: Record<string, unknown>): UserProf
     phone: (data.phone as string | undefined) ?? undefined,
     role: (data.role as UserProfile["role"]) ?? "client",
     isVerified: (data.isVerified as boolean) ?? false,
+    verificationStatus: (data.verificationStatus as UserProfile["verificationStatus"]) ?? "unverified",
+    category: (data.category as string | undefined) ?? undefined,
+    categories: (data.categories as string[] | undefined) ?? undefined,
     createdAt: new Date((data.createdAt as string) ?? Date.now()),
     lastLoginAt: new Date((data.lastLoginAt as string) ?? Date.now()),
   };
@@ -105,6 +108,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           photoURL: firebaseUser.photoURL ?? undefined,
           role: "client",
           isVerified: false,
+          verificationStatus: "unverified",
           createdAt: new Date(),
           lastLoginAt: new Date(),
         };

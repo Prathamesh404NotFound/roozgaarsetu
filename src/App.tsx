@@ -22,6 +22,7 @@ import AdminDashboardPage from "./pages/Admin/AdminDashboardPage";
 import AdminUsersPage from "./pages/Admin/AdminUsersPage";
 import AdminWorkersPage from "./pages/Admin/AdminWorkersPage";
 import AdminBookingsPage from "./pages/Admin/AdminBookingsPage";
+import BookingDetail from "./pages/BookingDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/workers" element={<Workers />} />
               <Route path="/worker/:id" element={<WorkerProfile />} />
               <Route path="/booking" element={<Booking />} />
+              <Route path="/booking/:id" element={<BookingDetail />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/become-worker" element={<BecomeWorker />} />

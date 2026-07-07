@@ -94,7 +94,12 @@ const WorkerProfile = () => {
                     <h1 className="font-heading text-2xl font-bold md:text-3xl">
                       {worker.name}
                     </h1>
-                    {worker.verified && <VerificationBadge />}
+                    <VerificationBadge
+                      status={
+                        (worker as any).verificationStatus ||
+                        (worker.verified ? "skill_verified" : "unverified")
+                      }
+                    />
                   </div>
                   <div className="mb-3 flex flex-wrap items-center gap-4 text-muted-foreground">
                     <span className="flex items-center gap-1">
