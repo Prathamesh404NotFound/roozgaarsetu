@@ -22,6 +22,8 @@ import AdminDashboardPage from "./pages/Admin/AdminDashboardPage";
 import AdminUsersPage from "./pages/Admin/AdminUsersPage";
 import AdminWorkersPage from "./pages/Admin/AdminWorkersPage";
 import AdminBookingsPage from "./pages/Admin/AdminBookingsPage";
+import AdminSettingsPage from "./pages/Admin/AdminSettingsPage";
+import AdminAnalyticsPage from "./pages/Admin/AdminAnalyticsPage";
 import BookingDetail from "./pages/BookingDetail";
 import NotFound from "./pages/NotFound";
 
@@ -113,6 +115,22 @@ const App = () => (
                 element={
                   <RoleRoute allowedRoles={["admin"]}>
                     <AdminBookingsPage />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/admin/settings"
+                element={
+                  <RoleRoute allowedRoles={["admin"]}>
+                    <AdminSettingsPage />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/admin/analytics"
+                element={
+                  <RoleRoute allowedRoles={["admin"]}>
+                    <AdminAnalyticsPage />
                   </RoleRoute>
                 }
               />

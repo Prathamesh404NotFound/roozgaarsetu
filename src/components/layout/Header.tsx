@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Phone, MessageCircle, Briefcase, LogOut, LayoutDashboard, Settings, LogIn, Globe } from "lucide-react";
+import { Menu, X, Phone, MessageCircle, Briefcase, LogOut, LayoutDashboard, Settings, LogIn, Globe, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/components/Auth/AuthProvider";
+import { useFirebase } from "@/context/FirebaseContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,13 +31,17 @@ const LANGS = [
 
 export const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [imageLoadError, setImageLoadError] = useState(false);
   const location = useLocation();
-  const { profile, loginWithGoogle, logout } = useAuth();
+  const { user, userProfile, loading, signInWithGoogle, signOut, isClient, isWorker, isAdmin } = useFirebase();
   const { t, i18n } = useTranslation();
 
-  const isClient = profile?.role === "client";
-  const isWorker = profile?.role === "worker";
-  const isAdmin = profile?.role === "admin";
+  // Reset image error when user changes
+  useEffect(() => {
+    if (user?.photoURL) {
+      setImageLoadError(false);
+    }
+  }, [user?.photoURL]);
 
   const getDashboardHref = () => {
     if (isAdmin) return "/admin";
@@ -65,17 +69,34 @@ export const Header = () => {
     { href: "/contact", label: t("nav.contact") },
   ];
 
-  // Initials avatar component
-  const InitialsAvatar = ({ className = "" }: { className?: string }) => (
-    <div
-      className={cn(
-        "flex items-center justify-center rounded-full bg-primary font-heading font-bold text-primary-foreground select-none",
-        className
-      )}
-    >
-      {getInitials(profile?.displayName ?? "U")}
-    </div>
-  );
+  // Avatar component with Google profile image and initials fallback
+  const UserAvatar = ({ className = "" }: { className?: string }) => {
+    const displayName = user?.displayName || user?.email || 'User';
+    const initials = getInitials(displayName);
+    const hasPhoto = user?.photoURL && !imageLoadError;
+
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 overflow-hidden",
+          className
+        )}
+      >
+        {hasPhoto ? (
+          <img
+            src={user.photoURL}
+            alt={displayName}
+            className="h-full w-full object-cover"
+            onError={() => setImageLoadError(true)}
+          />
+        ) : (
+          <span className="font-heading font-bold text-primary text-sm">
+            {initials}
+          </span>
+        )}
+      </div>
+    );
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -157,38 +178,22 @@ export const Header = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {profile ? (
+          {user ? (
             <>
-              {isClient && (
-                <Link
-                  to="/become-worker"
-                  className="hidden xl:flex items-center gap-1.5 rounded-lg border border-primary px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
-                >
-                  <Briefcase className="h-4 w-4" />
-                  {t("nav.becomeWorker")}
-                </Link>
-              )}
-
-              {isClient && (
-                <Button asChild size="sm">
-                  <Link to="/booking">{t("nav.bookNow")}</Link>
-                </Button>
-              )}
-
               {/* Avatar Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="relative h-9 w-9 rounded-full outline-none ring-primary/20 transition hover:ring-4 focus-visible:ring-4">
-                    <InitialsAvatar className="h-9 w-9 text-sm" />
+                    <UserAvatar className="h-9 w-9" />
                   </button>
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent align="end" className="w-56 mt-1 rounded-xl shadow-elevated">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none text-foreground">{profile.displayName}</p>
-                      <p className="text-xs leading-none text-muted-foreground">{profile.email}</p>
-                      <p className="text-[10px] uppercase font-bold text-primary mt-1">{profile.role}</p>
+                      <p className="text-sm font-medium leading-none text-foreground">{user.displayName || user.email}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                      <p className="text-[10px] uppercase font-bold text-primary mt-1">{userProfile?.role || 'user'}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -199,15 +204,6 @@ export const Header = () => {
                       <span>{isAdmin ? t("nav.adminPanel") : t("nav.dashboard")}</span>
                     </Link>
                   </DropdownMenuItem>
-
-                  {isClient && (
-                    <DropdownMenuItem asChild>
-                      <Link to="/become-worker" className="flex items-center gap-2 cursor-pointer">
-                        <Briefcase className="h-4 w-4 text-muted-foreground" />
-                        <span>{t("nav.becomeWorker")}</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
 
                   {!isAdmin && (
                     <DropdownMenuItem asChild>
@@ -220,7 +216,7 @@ export const Header = () => {
 
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => logout()}
+                    onClick={() => signOut()}
                     className="flex items-center gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
                   >
                     <LogOut className="h-4 w-4" />
@@ -230,7 +226,7 @@ export const Header = () => {
               </DropdownMenu>
             </>
           ) : (
-            <Button onClick={() => loginWithGoogle()} className="flex items-center gap-2" size="sm">
+            <Button onClick={() => signInWithGoogle()} className="flex items-center gap-2" size="sm" disabled={loading}>
               <LogIn className="h-4 w-4" />
               <span className="hidden sm:inline">{t("nav.signIn")}</span>
               <span className="sm:hidden">Sign In</span>
@@ -298,14 +294,14 @@ export const Header = () => {
               ))}
 
               <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
-                {profile ? (
+                {user ? (
                   <>
                     {/* User info */}
                     <div className="flex items-center gap-3 px-2 py-1">
-                      <InitialsAvatar className="h-10 w-10 text-sm shrink-0" />
+                      <UserAvatar className="h-10 w-10 shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold truncate">{profile.displayName}</p>
-                        <p className="text-xs text-muted-foreground truncate">{t("nav.loggedInAs")} {profile.role}</p>
+                        <p className="text-sm font-semibold truncate">{user.displayName || user.email}</p>
+                        <p className="text-xs text-muted-foreground truncate">{t("nav.loggedInAs")} {userProfile?.role || 'user'}</p>
                       </div>
                     </div>
 
@@ -319,17 +315,6 @@ export const Header = () => {
                       {isAdmin ? t("nav.adminPanel") : t("nav.dashboard")}
                     </Link>
 
-                    {isClient && (
-                      <Link
-                        to="/become-worker"
-                        onClick={() => setIsOpen(false)}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary py-2.5 text-sm font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
-                      >
-                        <Briefcase className="h-4 w-4" />
-                        {t("nav.becomeWorker")}
-                      </Link>
-                    )}
-
                     {!isAdmin && (
                       <Link
                         to={getProfileHref()}
@@ -341,17 +326,9 @@ export const Header = () => {
                       </Link>
                     )}
 
-                    {isClient && (
-                      <Button asChild className="w-full">
-                        <Link to="/booking" onClick={() => setIsOpen(false)}>
-                          {t("nav.bookNow")}
-                        </Link>
-                      </Button>
-                    )}
-
                     <Button
                       variant="destructive"
-                      onClick={() => { setIsOpen(false); logout(); }}
+                      onClick={() => { setIsOpen(false); signOut(); }}
                       className="w-full"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
@@ -360,8 +337,9 @@ export const Header = () => {
                   </>
                 ) : (
                   <Button
-                    onClick={() => { setIsOpen(false); loginWithGoogle(); }}
+                    onClick={() => { setIsOpen(false); signInWithGoogle(); }}
                     className="w-full"
+                    disabled={loading}
                   >
                     <LogIn className="mr-2 h-4 w-4" />
                     {t("nav.signIn")}

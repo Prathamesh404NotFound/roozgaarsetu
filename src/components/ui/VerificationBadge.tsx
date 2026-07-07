@@ -1,7 +1,7 @@
 import { ShieldCheck, ShieldAlert, Phone, FileCheck, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type VerificationTier = "unverified" | "phone_verified" | "id_verified" | "skill_verified";
+export type VerificationTier = "unverified" | "phone_verified" | "id_verified";
 
 interface VerificationBadgeProps {
   className?: string;
@@ -9,7 +9,7 @@ interface VerificationBadgeProps {
   status?: VerificationTier | boolean;
 }
 
-export const VerificationBadge = ({ className, size = "md", status = "skill_verified" }: VerificationBadgeProps) => {
+export const VerificationBadge = ({ className, size = "md", status = "id_verified" }: VerificationBadgeProps) => {
   const sizeClasses = {
     sm: "h-3.5 w-3.5",
     md: "h-4 w-4",
@@ -17,8 +17,8 @@ export const VerificationBadge = ({ className, size = "md", status = "skill_veri
   };
 
   // Convert boolean to appropriate tier
-  const tier: VerificationTier = typeof status === "boolean" 
-    ? (status ? "skill_verified" : "unverified") 
+  const tier: VerificationTier = typeof status === "boolean"
+    ? (status ? "id_verified" : "unverified")
     : status;
 
   const config = {
@@ -33,13 +33,8 @@ export const VerificationBadge = ({ className, size = "md", status = "skill_veri
       classes: "bg-blue-500/10 text-blue-600 border-blue-200 dark:text-blue-400 dark:border-blue-900/50",
     },
     id_verified: {
-      icon: FileCheck,
-      text: "ID Verified",
-      classes: "bg-amber-500/10 text-amber-600 border-amber-200 dark:text-amber-400 dark:border-amber-900/50",
-    },
-    skill_verified: {
       icon: CheckCircle,
-      text: "Skill Verified",
+      text: "ID Verified",
       classes: "bg-success/10 text-success border-success-200",
     },
   };

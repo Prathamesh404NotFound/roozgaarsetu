@@ -26,7 +26,7 @@ export interface UserProfile {
   email: string;
   displayName: string;
   photoURL?: string;
-  role: 'job_seeker' | 'employer' | 'admin';
+  role: 'job_seeker' | 'employer' | 'admin' | 'client' | 'worker';
   createdAt: string;
   updatedAt: string;
   isVerified: boolean;
@@ -86,10 +86,10 @@ export const firebaseAuth = {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      
+
       // Create or update user profile in database
-      await createUserProfile(user);
-      
+      await userProfileService.createUserProfile(user);
+
       return user;
     } catch (error) {
       console.error('Error signing in with Google:', error);
@@ -128,7 +128,7 @@ export const userProfileService = {
       email: user.email || '',
       displayName: user.displayName || '',
       photoURL: user.photoURL || '',
-      role: 'job_seeker', // Default role
+      role: 'client', // Default role to match existing app
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isVerified: false
@@ -141,7 +141,7 @@ export const userProfileService = {
   getUserProfile: async (uid: string): Promise<UserProfile | null> => {
     const userRef = ref(database, `users/${uid}`);
     const snapshot = await get(userRef);
-    
+
     if (snapshot.exists()) {
       return snapshot.val() as UserProfile;
     }
@@ -164,7 +164,7 @@ export const jobService = {
   createJob: async (job: Omit<Job, 'id' | 'createdAt' | 'updatedAt' | 'applicationCount'>): Promise<string> => {
     const jobsRef = ref(database, 'jobs');
     const newJobRef = push(jobsRef);
-    
+
     const jobData: Job = {
       ...job,
       id: newJobRef.key || '',
@@ -172,7 +172,7 @@ export const jobService = {
       updatedAt: new Date().toISOString(),
       applicationCount: 0
     };
-    
+
     await set(newJobRef, jobData);
     return newJobRef.key || '';
   },
@@ -181,7 +181,7 @@ export const jobService = {
   getJobs: async (): Promise<Job[]> => {
     const jobsRef = ref(database, 'jobs');
     const snapshot = await get(jobsRef);
-    
+
     if (snapshot.exists()) {
       const jobs = snapshot.val() as Record<string, Job>;
       return Object.values(jobs).filter(job => job.isActive && job.isApproved);
@@ -193,7 +193,7 @@ export const jobService = {
   getJobById: async (jobId: string): Promise<Job | null> => {
     const jobRef = ref(database, `jobs/${jobId}`);
     const snapshot = await get(jobRef);
-    
+
     if (snapshot.exists()) {
       return snapshot.val() as Job;
     }
@@ -207,9 +207,9 @@ export const jobService = {
       orderByChild('employerId'),
       equalTo(employerId)
     );
-    
+
     const snapshot = await get(jobsQuery);
-    
+
     if (snapshot.exists()) {
       const jobs = snapshot.val() as Record<string, Job>;
       return Object.values(jobs);
@@ -239,22 +239,22 @@ export const applicationService = {
   submitApplication: async (application: Omit<Application, 'id' | 'appliedAt' | 'updatedAt'>): Promise<string> => {
     const applicationsRef = ref(database, 'applications');
     const newApplicationRef = push(applicationsRef);
-    
+
     const applicationData: Application = {
       ...application,
       id: newApplicationRef.key || '',
       appliedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
+
     await set(newApplicationRef, applicationData);
-    
+
     // Update job application count
     const jobRef = ref(database, `jobs/${application.jobId}`);
     await update(jobRef, {
       applicationCount: increment(1)
     });
-    
+
     return newApplicationRef.key || '';
   },
 
@@ -265,9 +265,9 @@ export const applicationService = {
       orderByChild('jobId'),
       equalTo(jobId)
     );
-    
+
     const snapshot = await get(applicationsQuery);
-    
+
     if (snapshot.exists()) {
       const applications = snapshot.val() as Record<string, Application>;
       return Object.values(applications);
@@ -282,9 +282,9 @@ export const applicationService = {
       orderByChild('seekerId'),
       equalTo(seekerId)
     );
-    
+
     const snapshot = await get(applicationsQuery);
-    
+
     if (snapshot.exists()) {
       const applications = snapshot.val() as Record<string, Application>;
       return Object.values(applications);
@@ -308,13 +308,13 @@ export const savedJobService = {
   saveJob: async (savedJob: Omit<SavedJob, 'id' | 'savedAt'>): Promise<string> => {
     const savedJobsRef = ref(database, 'savedJobs');
     const newSavedJobRef = push(savedJobsRef);
-    
+
     const savedJobData: SavedJob = {
       ...savedJob,
       id: newSavedJobRef.key || '',
       savedAt: new Date().toISOString()
     };
-    
+
     await set(newSavedJobRef, savedJobData);
     return newSavedJobRef.key || '';
   },
@@ -326,9 +326,9 @@ export const savedJobService = {
       orderByChild('seekerId'),
       equalTo(seekerId)
     );
-    
+
     const snapshot = await get(savedJobsQuery);
-    
+
     if (snapshot.exists()) {
       const savedJobs = snapshot.val() as Record<string, SavedJob>;
       return Object.values(savedJobs);

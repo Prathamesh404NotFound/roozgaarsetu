@@ -49,7 +49,7 @@ const AdminWorkersPage = () => {
             city: w.city ?? "",
             bio: w.bio ?? "",
             isVerified: w.isVerified ?? false,
-            verificationStatus: w.verificationStatus ?? (w.isVerified ? "skill_verified" : "unverified"),
+            verificationStatus: w.verificationStatus ?? (w.isVerified ? "id_verified" : "unverified"),
             idDocumentUrl: w.idDocumentUrl,
             registeredAt: w.registeredAt,
             displayName: userObj.displayName ?? "Worker",
@@ -73,7 +73,7 @@ const AdminWorkersPage = () => {
   const changeTier = async (uid: string, tier: VerificationTier) => {
     setUpdatingId(uid);
     try {
-      const isVerified = (tier === "id_verified" || tier === "skill_verified");
+      const isVerified = (tier === "id_verified");
       await Promise.all([
         update(ref(database, `workers/${uid}`), { verificationStatus: tier, isVerified }),
         update(ref(database, `users/${uid}`), { verificationStatus: tier, isVerified }),
@@ -219,7 +219,6 @@ const AdminWorkersPage = () => {
                         <option value="unverified">Unverified</option>
                         <option value="phone_verified">Phone Verified</option>
                         <option value="id_verified">ID Verified</option>
-                        <option value="skill_verified">Skill Verified</option>
                       </select>
                       {updatingId === w.uid ? (
                         <Loader2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />

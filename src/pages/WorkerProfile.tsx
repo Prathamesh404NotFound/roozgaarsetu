@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 import {
   MapPin,
   Clock,
@@ -15,12 +16,14 @@ import {
   Star,
   MessageCircle,
   Phone,
+  Loader2,
 } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { RatingStars } from "@/components/ui/RatingStars";
-import workersData from "@/data/workers.json";
+import { ref, get } from "firebase/database";
+import { database } from "@/lib/firebase";
 
 const serviceIcons: Record<string, React.ElementType> = {
   cooking: ChefHat,
@@ -42,7 +45,58 @@ const serviceLabels: Record<string, string> = {
 
 const WorkerProfile = () => {
   const { id } = useParams<{ id: string }>();
-  const worker = workersData.workers.find((w) => w.id === id);
+  const [worker, setWorker] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchWorker = async () => {
+      if (!id) return;
+      try {
+        const [workerSnap, userSnap] = await Promise.all([
+          get(ref(database, `workers/${id}`)),
+          get(ref(database, `users/${id}`))
+        ]);
+
+        if (workerSnap.exists()) {
+          const workerData = workerSnap.val();
+          const userData = userSnap.exists() ? userSnap.val() : {};
+
+          setWorker({
+            id,
+            name: userData.displayName || "Worker",
+            services: workerData.categories || [workerData.category],
+            rating: 4.5,
+            reviewCount: 0,
+            verified: workerData.isVerified || false,
+            verificationStatus: workerData.verificationStatus,
+            hourlyRate: 100,
+            location: workerData.city || workerData.locality || "Pune",
+            experience: workerData.experience || "0 years",
+            bio: workerData.bio || "Professional worker",
+            languages: ["Hindi", "Marathi"],
+            availability: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+            reviews: []
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch worker:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWorker();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container py-20 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   if (!worker) {
     return (
@@ -97,7 +151,7 @@ const WorkerProfile = () => {
                     <VerificationBadge
                       status={
                         (worker as any).verificationStatus ||
-                        (worker.verified ? "skill_verified" : "unverified")
+                        (worker.verified ? "id_verified" : "unverified")
                       }
                     />
                   </div>
@@ -159,11 +213,10 @@ const WorkerProfile = () => {
                   {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
                     <span
                       key={day}
-                      className={`rounded-lg px-4 py-2 text-sm font-medium ${
-                        worker.availability.includes(day)
-                          ? "bg-success/10 text-success"
-                          : "bg-muted/30 text-muted-foreground"
-                      }`}
+                      className={`rounded-lg px-4 py-2 text-sm font-medium ${worker.availability.includes(day)
+                        ? "bg-success/10 text-success"
+                        : "bg-muted/30 text-muted-foreground"
+                        }`}
                     >
                       {day}
                     </span>

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, MapPin, Filter, ChefHat, Sparkles, Baby, Heart, Shirt, Car, Users } from "lucide-react";
+import { Search, MapPin, Filter, ChefHat, Sparkles, Baby, Heart, Shirt, Car, Users, Loader2 } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,7 @@ import { useAuth } from "@/components/Auth/AuthProvider";
 import { ref, get } from "firebase/database";
 import { database } from "@/lib/firebase";
 import { useTranslation } from "react-i18next";
-import workersData from "@/data/workers.json";
-import type { Booking } from "@/types";
+import type { Booking, WorkerRecord } from "@/types";
 
 const serviceIcons: Record<string, React.ElementType> = {
   cooking: ChefHat,
@@ -43,6 +42,51 @@ const Workers = () => {
   const [selectedService, setSelectedService] = useState(initialService);
   const [selectedLocation, setSelectedLocation] = useState("");
   const [nearbyHireCount, setNearbyHireCount] = useState<Record<string, number>>({});
+  const [workers, setWorkers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch workers from Firebase
+  useEffect(() => {
+    const fetchWorkers = async () => {
+      try {
+        const [workersSnap, usersSnap] = await Promise.all([
+          get(ref(database, "workers")),
+          get(ref(database, "users"))
+        ]);
+
+        if (workersSnap.exists()) {
+          const workersData = workersSnap.val();
+          const usersData = usersSnap.exists() ? usersSnap.val() : {};
+
+          const workersList = Object.entries(workersData).map(([uid, w]: [string, any]) => {
+            const user = usersData[uid] || {};
+            return {
+              id: uid,
+              name: user.displayName || "Worker",
+              services: w.categories || [w.category],
+              rating: 4.5, // Default rating since not in DB
+              reviewCount: 0,
+              verified: w.isVerified || false,
+              verificationStatus: w.verificationStatus,
+              hourlyRate: 100, // Default rate
+              location: w.city || w.locality || "Pune",
+              experience: w.experience || "0 years",
+              bio: w.bio || "Professional worker",
+              availability: w.availability
+            };
+          });
+
+          setWorkers(workersList);
+        }
+      } catch (err) {
+        console.error("Failed to fetch workers:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWorkers();
+  }, []);
 
   useEffect(() => {
     const clientLocality = (profile as any)?.locality?.trim().toLowerCase();
@@ -57,11 +101,11 @@ const Workers = () => {
         }
       });
       setNearbyHireCount(counts);
-    }).catch(() => {});
+    }).catch(() => { });
   }, [profile]);
 
   const filteredWorkers = useMemo(() => {
-    return workersData.workers.filter((worker) => {
+    return workers.filter((worker) => {
       const matchesSearch =
         worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         worker.bio.toLowerCase().includes(searchTerm.toLowerCase());
@@ -69,7 +113,7 @@ const Workers = () => {
       const matchesLocation = !selectedLocation || worker.location.toLowerCase().includes(selectedLocation.toLowerCase());
       return matchesSearch && matchesService && matchesLocation;
     });
-  }, [searchTerm, selectedService, selectedLocation]);
+  }, [searchTerm, selectedService, selectedLocation, workers]);
 
   const services = ["cooking", "cleaning", "childcare", "eldercare", "laundry", "driving"];
 
@@ -150,96 +194,104 @@ const Workers = () => {
       {/* Results */}
       <section className="py-10 lg:py-14">
         <div className="container">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-muted-foreground text-sm">
-              <span className="font-medium text-foreground">{filteredWorkers.length}</span> {t("workers.workersFound", { count: filteredWorkers.length })}
-            </p>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Filter className="h-4 w-4" />
-              {t("workers.sortByRating")}
-            </Button>
-          </div>
-
-          {filteredWorkers.length > 0 ? (
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-            >
-              {filteredWorkers.map((worker) => (
-                <motion.div key={worker.id} variants={itemVariants}>
-                  <Link
-                    to={`/worker/${worker.id}`}
-                    className="flex h-full flex-col rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-brand transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
-                  >
-                    <div className="mb-4 flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 font-heading text-lg sm:text-xl font-bold text-primary">
-                          {worker.name.split(" ").map((n) => n[0]).join("")}
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="font-heading text-base sm:text-lg font-semibold truncate">{worker.name}</h3>
-                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <MapPin className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{worker.location}</span>
-                          </div>
-                          {nearbyHireCount[worker.id] > 0 && (
-                            <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700 border border-green-100">
-                              <Users className="h-2.5 w-2.5" />
-                              {t("workers.hiredNearby", { count: nearbyHireCount[worker.id] })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <VerificationBadge
-                        size="sm"
-                        status={(worker as any).verificationStatus || (worker.verified ? "skill_verified" : "unverified")}
-                      />
-                    </div>
-
-                    {/* Services */}
-                    <div className="mb-3 flex flex-wrap gap-1.5">
-                      {worker.services.map((service) => {
-                        const Icon = serviceIcons[service];
-                        return (
-                          <span
-                            key={service}
-                            className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
-                          >
-                            <Icon className="h-3 w-3" />
-                            {t(`services.${service}`)}
-                          </span>
-                        );
-                      })}
-                    </div>
-
-                    {/* Bio */}
-                    <p className="mb-4 flex-1 text-sm text-muted-foreground line-clamp-2">{worker.bio}</p>
-
-                    {/* Footer */}
-                    <div className="flex items-center justify-between border-t border-border pt-4">
-                      <div>
-                        <RatingStars rating={worker.rating} size="sm" />
-                        <div className="text-xs text-muted-foreground">
-                          {worker.reviewCount} {t("workers.reviews")}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-heading text-lg font-bold text-primary">₹{worker.hourlyRate}</div>
-                        <div className="text-xs text-muted-foreground">{t("workers.perHour")}</div>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </motion.div>
-          ) : (
-            <div className="rounded-2xl border border-border bg-card p-10 sm:p-12 text-center">
-              <Search className="mx-auto mb-4 h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground" />
-              <h3 className="mb-2 font-heading text-lg sm:text-xl font-semibold">{t("workers.noWorkersTitle")}</h3>
-              <p className="text-muted-foreground text-sm">{t("workers.noWorkersDesc")}</p>
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
+          ) : (
+            <>
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-muted-foreground text-sm">
+                  <span className="font-medium text-foreground">{filteredWorkers.length}</span> {t("workers.workersFound", { count: filteredWorkers.length })}
+                </p>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Filter className="h-4 w-4" />
+                  {t("workers.sortByRating")}
+                </Button>
+              </div>
+
+              {filteredWorkers.length > 0 ? (
+                <motion.div
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
+                  className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                >
+                  {filteredWorkers.map((worker) => (
+                    <motion.div key={worker.id} variants={itemVariants}>
+                      <Link
+                        to={`/worker/${worker.id}`}
+                        className="flex h-full flex-col rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-brand transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
+                      >
+                        <div className="mb-4 flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 font-heading text-lg sm:text-xl font-bold text-primary">
+                              {worker.name.split(" ").map((n) => n[0]).join("")}
+                            </div>
+                            <div className="min-w-0">
+                              <h3 className="font-heading text-base sm:text-lg font-semibold truncate">{worker.name}</h3>
+                              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                <MapPin className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{worker.location}</span>
+                              </div>
+                              {nearbyHireCount[worker.id] > 0 && (
+                                <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700 border border-green-100">
+                                  <Users className="h-2.5 w-2.5" />
+                                  {t("workers.hiredNearby", { count: nearbyHireCount[worker.id] })}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <VerificationBadge
+                            size="sm"
+                            status={(worker as any).verificationStatus || (worker.verified ? "id_verified" : "unverified")}
+                          />
+                        </div>
+
+                        {/* Services */}
+                        <div className="mb-3 flex flex-wrap gap-1.5">
+                          {worker.services.map((service) => {
+                            const Icon = serviceIcons[service];
+                            return (
+                              <span
+                                key={service}
+                                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+                              >
+                                <Icon className="h-3 w-3" />
+                                {t(`services.${service}`)}
+                              </span>
+                            );
+                          })}
+                        </div>
+
+                        {/* Bio */}
+                        <p className="mb-4 flex-1 text-sm text-muted-foreground line-clamp-2">{worker.bio}</p>
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-between border-t border-border pt-4">
+                          <div>
+                            <RatingStars rating={worker.rating} size="sm" />
+                            <div className="text-xs text-muted-foreground">
+                              {worker.reviewCount} {t("workers.reviews")}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-heading text-lg font-bold text-primary">₹{worker.hourlyRate}</div>
+                            <div className="text-xs text-muted-foreground">{t("workers.perHour")}</div>
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              ) : (
+                <div className="rounded-2xl border border-border bg-card p-10 sm:p-12 text-center">
+                  <Search className="mx-auto mb-4 h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground" />
+                  <h3 className="mb-2 font-heading text-lg sm:text-xl font-semibold">{t("workers.noWorkersTitle")}</h3>
+                  <p className="text-muted-foreground text-sm">{t("workers.noWorkersDesc")}</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>

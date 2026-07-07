@@ -1,6 +1,14 @@
 import { motion } from "framer-motion";
 import { Linkedin, Twitter, Mail, User, LogIn, LogOut } from "lucide-react";
 import { useFirebase } from "@/context/FirebaseContext";
+import { useState } from "react";
+
+// Helper: derive initials from a display name
+function getInitials(name: string): string {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return (parts[0]?.[0] ?? "U").toUpperCase();
+}
 
 const founders = [
     {
@@ -60,6 +68,41 @@ const itemVariants = {
 
 export const FoundersSection = () => {
     const { user, userProfile, loading, signInWithGoogle, signOut } = useFirebase();
+    const [imageLoadError, setImageLoadError] = useState(false);
+
+    // Reset image error when user changes
+    const handleUserImageError = () => {
+        setImageLoadError(true);
+    };
+
+    const displayName = user?.displayName || user?.email || 'User';
+    const initials = getInitials(displayName);
+    const hasPhoto = user?.photoURL && !imageLoadError;
+
+    // Founder image component with error handling
+    const FounderImage = ({ name, image }: { name: string; image: string }) => {
+        const [imageError, setImageError] = useState(false);
+        const founderInitials = getInitials(name);
+
+        if (imageError || !image) {
+            return (
+                <div className="flex h-full w-full items-center justify-center">
+                    <span className="font-heading text-3xl font-bold text-primary">
+                        {founderInitials}
+                    </span>
+                </div>
+            );
+        }
+
+        return (
+            <img
+                src={image}
+                alt={name}
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                onError={() => setImageError(true)}
+            />
+        );
+    };
 
     return (
         <section className="py-20 lg:py-28 bg-secondary/5">
@@ -85,19 +128,22 @@ export const FoundersSection = () => {
                     {user ? (
                         <div className="flex items-center justify-center gap-4">
                             <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                                    {user.photoURL ? (
+                                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center overflow-hidden">
+                                    {hasPhoto ? (
                                         <img
                                             src={user.photoURL}
-                                            alt={user.displayName || 'User'}
+                                            alt={displayName}
                                             className="h-full w-full rounded-full object-cover"
+                                            onError={handleUserImageError}
                                         />
                                     ) : (
-                                        <User className="h-5 w-5 text-primary" />
+                                        <span className="font-heading font-bold text-primary text-sm">
+                                            {initials}
+                                        </span>
                                     )}
                                 </div>
                                 <div>
-                                    <p className="font-medium text-foreground">Welcome, {user.displayName || user.email}</p>
+                                    <p className="font-medium text-foreground">Welcome, {displayName}</p>
                                     <p className="text-sm text-muted-foreground">You're logged in as {userProfile?.role || 'user'}</p>
                                 </div>
                             </div>
@@ -158,19 +204,7 @@ export const FoundersSection = () => {
                                 >
                                     {/* Founder Image */}
                                     <div className="relative mx-auto mb-6 h-32 w-32 overflow-hidden rounded-full bg-gradient-to-br from-primary/20 to-secondary/20">
-                                        {founder.image ? (
-                                            <img
-                                                src={founder.image}
-                                                alt={founder.name}
-                                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                            />
-                                        ) : (
-                                            <div className="flex h-full w-full items-center justify-center">
-                                                <span className="font-heading text-3xl font-bold text-primary">
-                                                    {founder.name.split(" ").map((n) => n[0]).join("")}
-                                                </span>
-                                            </div>
-                                        )}
+                                        <FounderImage name={founder.name} image={founder.image} />
                                     </div>
 
                                     {/* Founder Info */}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ref, update } from "firebase/database";
-import { User, Phone, MapPin, Loader2, CheckCircle, Pencil } from "lucide-react";
+import { User, Phone, MapPin, Loader2, CheckCircle, Pencil, Bell, Shield, Globe, CreditCard, ToggleLeft, ToggleRight, Settings, DollarSign } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { database } from "@/lib/firebase";
@@ -13,22 +13,36 @@ const ClientProfile = () => {
 
   const [form, setForm] = useState({
     displayName: profile?.displayName ?? "",
-    phone:       profile?.phone ?? "",
-    city:        profile?.city ?? "",
-    locality:    (profile as any)?.locality ?? "",
+    phone: profile?.phone ?? "",
+    city: profile?.city ?? "",
+    locality: (profile as any)?.locality ?? "",
   });
-  const [errors, setErrors]   = useState<FormErrors>({});
-  const [saving, setSaving]   = useState(false);
-  const [saved, setSaved]     = useState(false);
+  const [preferences, setPreferences] = useState({
+    emailNotifications: (profile as any)?.preferences?.emailNotifications ?? true,
+    smsNotifications: (profile as any)?.preferences?.smsNotifications ?? false,
+    pushNotifications: (profile as any)?.preferences?.pushNotifications ?? true,
+    language: (profile as any)?.preferences?.language ?? "en",
+    currency: (profile as any)?.preferences?.currency ?? "INR",
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   // Sync form when profile loads
   useEffect(() => {
     if (profile) {
       setForm({
         displayName: profile.displayName,
-        phone:       profile.phone ?? "",
-        city:        profile.city ?? "",
-        locality:    (profile as any).locality ?? "",
+        phone: profile.phone ?? "",
+        city: profile.city ?? "",
+        locality: (profile as any).locality ?? "",
+      });
+      setPreferences({
+        emailNotifications: (profile as any)?.preferences?.emailNotifications ?? true,
+        smsNotifications: (profile as any)?.preferences?.smsNotifications ?? false,
+        pushNotifications: (profile as any)?.preferences?.pushNotifications ?? true,
+        language: (profile as any)?.preferences?.language ?? "en",
+        currency: (profile as any)?.preferences?.currency ?? "INR",
       });
     }
   }, [profile]);
@@ -36,6 +50,11 @@ const ClientProfile = () => {
   const set_ = (k: keyof typeof form, v: string) => {
     setForm((p) => ({ ...p, [k]: v }));
     setErrors((p) => ({ ...p, [k]: undefined }));
+    setSaved(false);
+  };
+
+  const setPref = (key: keyof typeof preferences, value: any) => {
+    setPreferences((p) => ({ ...p, [key]: value }));
     setSaved(false);
   };
 
@@ -55,10 +74,11 @@ const ClientProfile = () => {
     try {
       await update(ref(database, `users/${user.uid}`), {
         displayName: form.displayName.trim(),
-        phone:       form.phone.trim() || null,
-        city:        form.city.trim() || null,
-        locality:    form.locality.trim() || null,
-        updatedAt:   new Date().toISOString(),
+        phone: form.phone.trim() || null,
+        city: form.city.trim() || null,
+        locality: form.locality.trim() || null,
+        preferences: preferences,
+        updatedAt: new Date().toISOString(),
       });
       setSaved(true);
     } catch (err) {
@@ -179,6 +199,115 @@ const ClientProfile = () => {
                       placeholder="e.g. Gokuldham Society"
                       className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none ring-ring transition focus:ring-2"
                     />
+                  </div>
+                </div>
+
+                {/* Preferences Section */}
+                <div className="mt-8 pt-8 border-t border-border">
+                  <div className="mb-5 flex items-center gap-2">
+                    <Settings className="h-4 w-4 text-primary" />
+                    <h2 className="font-heading text-lg font-semibold">Preferences</h2>
+                  </div>
+
+                  {/* Notification Toggles */}
+                  <div className="space-y-4 mb-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Bell className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Email Notifications</p>
+                          <p className="text-xs text-muted-foreground">Receive booking updates via email</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPref("emailNotifications", !preferences.emailNotifications)}
+                        className="transition"
+                      >
+                        {preferences.emailNotifications ? (
+                          <ToggleRight className="h-6 w-6 text-primary" />
+                        ) : (
+                          <ToggleLeft className="h-6 w-6 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">SMS Notifications</p>
+                          <p className="text-xs text-muted-foreground">Receive booking updates via SMS</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPref("smsNotifications", !preferences.smsNotifications)}
+                        className="transition"
+                      >
+                        {preferences.smsNotifications ? (
+                          <ToggleRight className="h-6 w-6 text-primary" />
+                        ) : (
+                          <ToggleLeft className="h-6 w-6 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Shield className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Push Notifications</p>
+                          <p className="text-xs text-muted-foreground">Receive in-app notifications</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPref("pushNotifications", !preferences.pushNotifications)}
+                        className="transition"
+                      >
+                        {preferences.pushNotifications ? (
+                          <ToggleRight className="h-6 w-6 text-primary" />
+                        ) : (
+                          <ToggleLeft className="h-6 w-6 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Language & Currency */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="pref-language" className="mb-1.5 flex items-center gap-2 text-sm font-medium">
+                        <Globe className="h-4 w-4 text-primary" /> Language
+                      </label>
+                      <select
+                        id="pref-language"
+                        value={preferences.language}
+                        onChange={(e) => setPref("language", e.target.value)}
+                        className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none ring-ring transition focus:ring-2"
+                      >
+                        <option value="en">English</option>
+                        <option value="hi">हिंदी (Hindi)</option>
+                        <option value="mr">मराठी (Marathi)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="pref-currency" className="mb-1.5 flex items-center gap-2 text-sm font-medium">
+                        <DollarSign className="h-4 w-4 text-primary" /> Currency
+                      </label>
+                      <select
+                        id="pref-currency"
+                        value={preferences.currency}
+                        onChange={(e) => setPref("currency", e.target.value)}
+                        className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none ring-ring transition focus:ring-2"
+                      >
+                        <option value="INR">₹ Indian Rupee (INR)</option>
+                        <option value="USD">$ US Dollar (USD)</option>
+                        <option value="EUR">€ Euro (EUR)</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 

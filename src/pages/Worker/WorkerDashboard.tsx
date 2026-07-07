@@ -5,7 +5,8 @@ import { ref, get, update, query, orderByChild, equalTo, onValue } from "firebas
 import {
   Briefcase, CheckCircle2, XCircle, Clock, IndianRupee,
   Loader2, User, TrendingUp, Lock, Wallet, AlertTriangle, ShieldCheck,
-  MapPin, ToggleLeft, ToggleRight, ArrowRight, Zap, RefreshCw, Info, Wifi, WifiOff
+  MapPin, ToggleLeft, ToggleRight, ArrowRight, Zap, RefreshCw, Info, Wifi, WifiOff,
+  Calendar, BarChart3, History, Download
 } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
@@ -20,18 +21,18 @@ import { toast } from "sonner";
 // ─── Status badge ────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }> = {
-  pending:   { label: "Pending",   className: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-  accepted:  { label: "Accepted",  className: "bg-blue-50 text-blue-700 border-blue-200" },
+  pending: { label: "Pending", className: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+  accepted: { label: "Accepted", className: "bg-blue-50 text-blue-700 border-blue-200" },
   completed: { label: "Completed", className: "bg-green-50 text-green-700 border-green-200" },
-  declined:  { label: "Declined",  className: "bg-red-50 text-red-700 border-red-200" },
+  declined: { label: "Declined", className: "bg-red-50 text-red-700 border-red-200" },
 };
 
 const PAYMENT_STATUS_CONFIG: Record<PaymentStatus, { label: string; className: string }> = {
-  pending:   { label: "Awaiting Deposit", className: "bg-muted text-muted-foreground border-border" },
-  held:      { label: "Escrow Held",      className: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-  released:  { label: "Released",        className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  refunded:  { label: "Refunded",        className: "bg-zinc-100 text-zinc-600 border-zinc-200" },
-  disputed:  { label: "Disputed",        className: "bg-amber-50 text-amber-700 border-amber-200" },
+  pending: { label: "Awaiting Deposit", className: "bg-muted text-muted-foreground border-border" },
+  held: { label: "Escrow Held", className: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+  released: { label: "Released", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  refunded: { label: "Refunded", className: "bg-zinc-100 text-zinc-600 border-zinc-200" },
+  disputed: { label: "Disputed", className: "bg-amber-50 text-amber-700 border-amber-200" },
 };
 
 const StatusBadge = ({ status }: { status: BookingStatus }) => {
@@ -67,12 +68,12 @@ interface RouteStop {
 
 const WorkerDashboard = () => {
   const { user, profile } = useAuth();
-  
+
   // Base dashboard states
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [acting, setActing]     = useState<string | null>(null);
-  
+  const [loading, setLoading] = useState(true);
+  const [acting, setActing] = useState<string | null>(null);
+
   // New States
   const [availability, setAvailability] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -128,7 +129,7 @@ const WorkerDashboard = () => {
       // Count bookings in last 30 days matching worker area
       const now = Date.now();
       const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-      
+
       const counts: Record<string, number> = {};
       SERVICE_CATEGORIES.forEach((c) => { counts[c.id] = 0; });
 
@@ -136,7 +137,7 @@ const WorkerDashboard = () => {
         if (!b.createdAt || !b.category) return;
         const bTime = new Date(b.createdAt).getTime();
         const matchesLocality = b.locality && b.locality.trim().toLowerCase().includes(targetLocality);
-        
+
         if (now - bTime < thirtyDaysMs && matchesLocality) {
           counts[b.category] = (counts[b.category] || 0) + 1;
         }
@@ -279,7 +280,7 @@ const WorkerDashboard = () => {
         actualPayoutAmount: net,
         updatedAt: new Date().toISOString(),
       });
-      
+
       toast.success(`Success! ₹${net} has been instantly transferred (₹${fee} processing fee applied).`);
       setPayoutModalBooking(null);
       await fetchBookings();
@@ -361,8 +362,8 @@ const WorkerDashboard = () => {
     .reduce((sum, b) => sum + (b.amount ?? 0), 0);
 
   const counts = {
-    pending:   bookings.filter((b) => b.status === "pending").length,
-    accepted:  bookings.filter((b) => b.status === "accepted").length,
+    pending: bookings.filter((b) => b.status === "pending").length,
+    accepted: bookings.filter((b) => b.status === "accepted").length,
     completed: bookings.filter((b) => b.status === "completed").length,
   };
 
@@ -371,8 +372,7 @@ const WorkerDashboard = () => {
   const tierUnlocked = {
     unverified: "Verify phone number to receive job requests.",
     phone_verified: "Verify ID to get 2x more job invites & client deposits.",
-    id_verified: "Complete skill assessment to trigger 3x more bookings & unlock Golden badge.",
-    skill_verified: "3x More Bookings Active! You have maximum trust parameters.",
+    id_verified: "You have maximum trust parameters with ID verification.",
   }[currentTier] || "";
 
   return (
@@ -422,13 +422,12 @@ const WorkerDashboard = () => {
                   <span className="text-xs text-white/80 capitalize bg-white/10 px-2 py-0.5 rounded border border-white/10">
                     Primary: {profile?.category || "Helper"}
                   </span>
-                  
+
                   {/* Status Indicator */}
-                  <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded border ${
-                    isOnline
-                      ? "bg-green-500/20 text-green-300 border-green-500/30"
-                      : "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                  }`}>
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded border ${isOnline
+                    ? "bg-green-500/20 text-green-300 border-green-500/30"
+                    : "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                    }`}>
                     {isOnline ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
                     {isOnline ? "Online" : "Offline"}
                   </span>
@@ -490,7 +489,7 @@ const WorkerDashboard = () => {
               </div>
             </div>
 
-            {currentTier !== "skill_verified" && (
+            {currentTier !== "id_verified" && (
               <Link
                 to="/profile/worker"
                 className="inline-flex items-center gap-1.5 text-xs font-bold bg-indigo-600 text-white px-4 py-2.5 rounded-xl hover:bg-indigo-700 transition shadow-sm self-start md:self-auto shrink-0"
@@ -507,10 +506,10 @@ const WorkerDashboard = () => {
       <section className="border-b border-border bg-card">
         <div className="container grid grid-cols-2 gap-px md:grid-cols-4">
           {[
-            { label: "Cleared Earnings",  value: `₹${clearedEarnings.toLocaleString("en-IN")}`, icon: IndianRupee,   color: "text-green-600" },
-            { label: "Held in Escrow",    value: `₹${heldEarnings.toLocaleString("en-IN")}`,    icon: Wallet,        color: "text-indigo-600" },
-            { label: "Pending Requests",  value: counts.pending,                                icon: Clock,         color: "text-yellow-600" },
-            { label: "Active Approved",   value: counts.accepted,                               icon: Briefcase,     color: "text-blue-600" },
+            { label: "Cleared Earnings", value: `₹${clearedEarnings.toLocaleString("en-IN")}`, icon: IndianRupee, color: "text-green-600" },
+            { label: "Held in Escrow", value: `₹${heldEarnings.toLocaleString("en-IN")}`, icon: Wallet, color: "text-indigo-600" },
+            { label: "Pending Requests", value: counts.pending, icon: Clock, color: "text-yellow-600" },
+            { label: "Active Approved", value: counts.accepted, icon: Briefcase, color: "text-blue-600" },
           ].map(({ label, value, icon: Icon, color }) => (
             <div key={label} className="flex flex-col gap-1 px-6 py-5">
               <Icon className={`h-5 w-5 ${color}`} />
@@ -521,10 +520,68 @@ const WorkerDashboard = () => {
         </div>
       </section>
 
+      {/* Earnings History Section */}
+      <section className="py-10 border-b border-border">
+        <div className="container">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="font-heading text-xl font-bold text-foreground flex items-center gap-2">
+              <History className="h-5 w-5 text-primary" /> Earnings History
+            </h2>
+            <button className="flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+              <Download className="h-4 w-4" /> Download Report
+            </button>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-muted/30 border-b border-border">
+                  <tr>
+                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date</th>
+                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Service</th>
+                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Client</th>
+                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Amount</th>
+                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {bookings.filter(b => b.paymentStatus === "released").length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-sm text-muted-foreground">
+                        No earnings history yet
+                      </td>
+                    </tr>
+                  ) : (
+                    bookings.filter(b => b.paymentStatus === "released").map((b) => (
+                      <tr key={b.id} className="hover:bg-muted/10">
+                        <td className="px-6 py-4 text-sm text-foreground">
+                          {new Date(b.updatedAt || b.createdAt).toLocaleDateString("en-IN", {
+                            day: "numeric", month: "short", year: "numeric"
+                          })}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-foreground capitalize">{b.category}</td>
+                        <td className="px-6 py-4 text-sm text-foreground">{b.clientName}</td>
+                        <td className="px-6 py-4 text-sm font-bold text-primary">₹{b.amount}{b.payoutFeeDeduction && ` (-₹${b.payoutFeeDeduction})`}</td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 text-xs font-semibold">
+                            <CheckCircle2 className="h-3 w-3" />
+                            {b.payoutType === "instant" ? "Instant" : "Released"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Main Grid: Left Jobs, Right scheduling & Demand Hints */}
       <section className="py-10">
         <div className="container grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
+
           {/* LEFT: Bookings list (8 columns) */}
           <div className="lg:col-span-8 space-y-6">
             <h2 className="font-heading text-xl font-bold text-foreground flex items-center gap-2">
@@ -563,25 +620,25 @@ const WorkerDashboard = () => {
                             </span>
                           )}
                         </div>
-                        
+
                         <p className="text-sm mt-1">
                           Client: <span className="font-semibold text-foreground">{b.clientName}</span>
                         </p>
-                        
+
                         {b.locality && (
                           <p className="text-xs text-muted-foreground flex items-center gap-0.5">
                             <MapPin className="h-3.5 w-3.5 inline text-muted-foreground" />
                             Locality: <span className="font-medium text-foreground">{b.locality}</span>
                           </p>
                         )}
-                        
+
                         {b.notes && (
                           <div className="text-xs text-muted-foreground/90 whitespace-pre-line bg-muted/40 rounded-xl p-3 mt-2 border border-border">
                             <p className="font-semibold text-[10px] uppercase text-muted-foreground mb-1 tracking-wider">Instructions:</p>
                             {b.notes}
                           </div>
                         )}
-                        
+
                         <p className="text-xs text-muted-foreground pt-1.5">
                           Scheduled: <span className="font-bold text-foreground">
                             {new Date(b.date).toLocaleDateString("en-IN", {
@@ -590,7 +647,7 @@ const WorkerDashboard = () => {
                           </span>
                         </p>
                       </div>
-                      
+
                       <div className="text-left md:text-right shrink-0">
                         {b.amount && (
                           <p className="text-xl font-black text-primary font-heading">₹{b.amount}</p>
@@ -642,7 +699,7 @@ const WorkerDashboard = () => {
                           <span className="text-xs text-indigo-700 font-bold flex items-center gap-1.5 bg-indigo-50 px-3.5 py-2 rounded-xl border border-indigo-200">
                             <ShieldCheck className="h-3.5 w-3.5 text-indigo-600 animate-pulse" /> Escrow Secure. Start Job!
                           </span>
-                          
+
                           <button
                             id={`btn-complete-${b.id}`}
                             onClick={() => changeStatus(b.id, "completed")}
@@ -665,7 +722,7 @@ const WorkerDashboard = () => {
                               <p className="text-[10px] text-muted-foreground mt-0.5">Standard release will occur automatically within 3-5 days of customer verification (0% Fee).</p>
                             </div>
                           </div>
-                          
+
                           {/* Get Paid Now button */}
                           <button
                             type="button"
@@ -706,17 +763,17 @@ const WorkerDashboard = () => {
 
           {/* RIGHT: Route Schedule & Demand Hints (4 columns) */}
           <div className="lg:col-span-4 space-y-6">
-            
+
             {/* Widget A: Route Optimizer sequencer */}
             <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
               <h3 className="font-heading text-md font-bold text-foreground flex items-center gap-2">
                 <MapPin className="h-4.5 w-4.5 text-primary" /> Proximity Route Optimizer
               </h3>
-              
+
               <p className="text-xs text-muted-foreground">
                 Same-day multiple bookings sequenced to minimize geographic travel using nearest-neighbor proximity calculations.
               </p>
-              
+
               {Object.keys(routeSequences).length === 0 ? (
                 <div className="rounded-xl border border-dashed border-border p-4 text-center text-xs text-muted-foreground/80 bg-muted/10">
                   No accepted jobs scheduled to suggest routes.
@@ -730,7 +787,7 @@ const WorkerDashboard = () => {
                         <p className="text-xs font-bold text-foreground border-b border-border/80 pb-1.5 mb-2.5 uppercase tracking-wider text-primary">
                           {new Date(day).toLocaleDateString("en-IN", { day: "numeric", month: "short", weekday: "short" })}
                         </p>
-                        
+
                         {stops.length <= 1 ? (
                           <p className="text-xs text-muted-foreground italic">Single booking scheduled. No sequencing needed.</p>
                         ) : (
@@ -741,7 +798,7 @@ const WorkerDashboard = () => {
                                 <span className="absolute -left-[21.5px] top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary font-heading text-[9px] font-black text-primary-foreground ring-4 ring-card">
                                   {idx + 1}
                                 </span>
-                                
+
                                 <div className="text-left leading-tight">
                                   <p className="text-xs font-bold text-foreground capitalize">{stop.booking.category} ({stop.booking.clientName})</p>
                                   <p className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-0.5">
@@ -770,7 +827,7 @@ const WorkerDashboard = () => {
               <h3 className="font-heading text-md font-bold text-foreground flex items-center gap-2">
                 <TrendingUp className="h-4.5 w-4.5 text-primary" /> Local Skill Market Demand
               </h3>
-              
+
               <p className="text-xs text-muted-foreground">
                 Posting frequency aggregates for <span className="font-bold underline text-foreground">{profile?.locality || "Gokuldham"}</span> (past 30 days):
               </p>
@@ -783,7 +840,7 @@ const WorkerDashboard = () => {
                 <div className="space-y-2.5">
                   {demandHints.map((dh) => {
                     const isTagged = profile?.categories?.includes(dh.categoryId) || profile?.category === dh.categoryId;
-                    
+
                     const badgeStyles = {
                       High: "bg-red-50 text-red-700 border-red-200",
                       Medium: "bg-amber-50 text-amber-700 border-amber-200",
@@ -812,7 +869,7 @@ const WorkerDashboard = () => {
                   })}
                 </div>
               )}
-              
+
               <div className="border-t border-border pt-3">
                 <Link
                   to="/profile/worker"

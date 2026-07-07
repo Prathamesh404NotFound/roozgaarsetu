@@ -13,6 +13,8 @@ interface FirebaseContextType {
   isJobSeeker: boolean;
   isEmployer: boolean;
   isAdmin: boolean;
+  isClient: boolean;
+  isWorker: boolean;
 }
 
 const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
@@ -40,7 +42,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
       setLoading(true);
       const signedInUser = await firebaseAuth.signInWithGoogle();
       setUser(signedInUser);
-      
+
       // Fetch user profile after sign in
       const profile = await userProfileService.getUserProfile(signedInUser.uid);
       setUserProfile(profile);
@@ -67,10 +69,10 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
   // Update user profile
   const updateUserProfile = async (updates: Partial<UserProfile>) => {
     if (!user) throw new Error('No user logged in');
-    
+
     try {
       await userProfileService.updateUserProfile(user.uid, updates);
-      
+
       // Refresh user profile
       const updatedProfile = await userProfileService.getUserProfile(user.uid);
       setUserProfile(updatedProfile);
@@ -84,7 +86,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
   useEffect(() => {
     const unsubscribe = firebaseAuth.onAuthStateChanged(async (authUser) => {
       setUser(authUser);
-      
+
       if (authUser) {
         // Fetch user profile
         const profile = await userProfileService.getUserProfile(authUser.uid);
@@ -92,7 +94,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
       } else {
         setUserProfile(null);
       }
-      
+
       setLoading(false);
     });
 
@@ -101,9 +103,11 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
 
   // Computed properties
   const isAuthenticated = !!user;
-  const isJobSeeker = userProfile?.role === 'job_seeker';
-  const isEmployer = userProfile?.role === 'employer';
+  const isJobSeeker = userProfile?.role === 'job_seeker' || userProfile?.role === 'client';
+  const isEmployer = userProfile?.role === 'employer' || userProfile?.role === 'worker';
   const isAdmin = userProfile?.role === 'admin';
+  const isClient = userProfile?.role === 'client' || userProfile?.role === 'job_seeker';
+  const isWorker = userProfile?.role === 'worker' || userProfile?.role === 'employer';
 
   const value: FirebaseContextType = {
     user,
@@ -116,6 +120,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
     isJobSeeker,
     isEmployer,
     isAdmin,
+    isClient,
+    isWorker,
   };
 
   return (

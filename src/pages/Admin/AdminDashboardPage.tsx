@@ -5,7 +5,7 @@ import { ref, get, update } from "firebase/database";
 import {
   Users, Briefcase, CalendarDays, Loader2, ArrowLeft, CheckCircle, XCircle, Info,
   AlertTriangle, ShieldCheck, MapPin, TrendingUp, IndianRupee, Wallet, Calendar,
-  Filter, Award, Eye, Hammer, RefreshCw, Lock as LockIcon
+  Filter, Award, Eye, Hammer, RefreshCw, Lock as LockIcon, Settings, BarChart, FileText
 } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { database } from "@/lib/firebase";
@@ -19,13 +19,12 @@ import "leaflet/dist/leaflet.css";
 
 // ─── Verification Tiers ──────────────────────────────────────────────────────
 
-type VerificationTier = 'unverified' | 'phone_verified' | 'id_verified' | 'skill_verified';
+type VerificationTier = 'unverified' | 'phone_verified' | 'id_verified';
 
 const TIER_LABELS: Record<VerificationTier, string> = {
   unverified: "Unverified",
   phone_verified: "Phone Verified",
-  id_verified: "ID Verified",
-  skill_verified: "Skill Verified"
+  id_verified: "ID Verified"
 };
 
 // ─── Heuristic IP/Device Generator for Simulation of IP duplication ──────────
@@ -97,7 +96,7 @@ const AdminDashboardPage = () => {
 
       const usersObj = usersSnap.exists() ? (usersSnap.val() as Record<string, UserProfile>) : {};
       const workersObj = workersSnap.exists() ? (workersSnap.val() as Record<string, WorkerRecord>) : {};
-      
+
       let bookingsList: Booking[] = [];
       if (bookingsSnap.exists()) {
         bookingsList = Object.entries(bookingsSnap.val() as Record<string, Booking>).map(([id, b]) => ({
@@ -114,7 +113,7 @@ const AdminDashboardPage = () => {
       // Perform scans for fraud & category health dynamic summaries
       runFraudAuditScan(usersObj, workersObj, bookingsList);
       runCategoryHealthAnalysis(bookingsList);
-      
+
     } catch (err) {
       console.error(err);
       toast.error("Failed to refresh admin marketplace registries.");
@@ -386,7 +385,7 @@ const AdminDashboardPage = () => {
 
   // Structured Dispute Resolution actions
   const resolveDisputePaymentState = async (
-    bookingId: string, 
+    bookingId: string,
     decision: "full_worker" | "full_client" | "partial_split"
   ) => {
     setActionInProgress(bookingId);
@@ -447,10 +446,10 @@ const AdminDashboardPage = () => {
 
   // Overview metrics calculations
   let escrowTotals = { held: 0, released: 0, refunded: 0, disputed: 0, commissions: 0 };
-  
+
   bookings.forEach((b) => {
     const amt = b.amount || 0;
-    
+
     // Add up commission totals from 5% instant payout fee check
     if (b.payoutFeeDeduction) {
       escrowTotals.commissions += b.payoutFeeDeduction;
@@ -514,30 +513,46 @@ const AdminDashboardPage = () => {
           <div className="flex items-center gap-1 overflow-x-auto py-2.5">
             {[
               { id: "overview", label: "Overview & Health", icon: TrendingUp },
-              { id: "verify", label: "Verification Queue", icon: ShieldCheck, badgeCount: Object.values(workers).filter(w => w.idDocumentUrl && w.verificationStatus !== "id_verified" && w.verificationStatus !== "skill_verified").length },
+              { id: "verify", label: "Verification Queue", icon: ShieldCheck, badgeCount: Object.values(workers).filter(w => w.idDocumentUrl && w.verificationStatus !== "id_verified").length },
               { id: "disputes", label: "Disputes Center", icon: AlertTriangle, badgeCount: bookings.filter(b => b.paymentStatus === "disputed").length },
               { id: "fraud", label: "Fraud & Anomalies", icon: Info, badgeCount: flaggedItems.length },
               { id: "heatmap", label: "Geo Heatmap", icon: MapPin },
               { id: "ledger", label: "Financial Ledger", icon: Wallet },
+              { id: "audit", label: "Audit Logs", icon: FileText },
+              { id: "analytics", label: "Analytics", icon: BarChart, isLink: true, linkTo: "/admin/analytics" },
+              { id: "settings", label: "Settings", icon: Settings, isLink: true, linkTo: "/admin/settings" },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
+              const tabClassName = `flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all relative shrink-0 ${isActive
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                }`;
+
+              if (tab.isLink) {
+                return (
+                  <Link
+                    key={tab.id}
+                    to={tab.linkTo}
+                    className={tabClassName}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{tab.label}</span>
+                  </Link>
+                );
+              }
+
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all relative shrink-0 ${
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                  }`}
+                  className={tabClassName}
                 >
                   <Icon className="h-4 w-4" />
                   <span>{tab.label}</span>
                   {!!tab.badgeCount && (
-                    <span className={`inline-flex items-center justify-center rounded-full h-4 min-w-[16px] px-1 text-[9px] font-black ${
-                      isActive ? "bg-white text-primary" : "bg-red-500 text-white"
-                    }`}>
+                    <span className={`inline-flex items-center justify-center rounded-full h-4 min-w-[16px] px-1 text-[9px] font-black ${isActive ? "bg-white text-primary" : "bg-red-500 text-white"
+                      }`}>
                       {tab.badgeCount}
                     </span>
                   )}
@@ -556,7 +571,7 @@ const AdminDashboardPage = () => {
             </div>
           ) : (
             <div className="space-y-6">
-              
+
               {/* TAB 1: OVERVIEW & MARKET HEALTH */}
               {activeTab === "overview" && (
                 <div className="space-y-8">
@@ -612,9 +627,8 @@ const AdminDashboardPage = () => {
                                   <td className="px-5 py-3.5 capitalize text-slate-650">{cm.area}</td>
                                   <td className="px-5 py-3.5 text-center font-semibold">{cm.bookingsCount}</td>
                                   <td className="px-5 py-3.5">
-                                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded font-black ${
-                                      isSlow ? "bg-amber-50 text-amber-700 border border-amber-100" : "bg-green-50 text-green-700 border border-green-100"
-                                    }`}>
+                                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded font-black ${isSlow ? "bg-amber-50 text-amber-700 border border-amber-100" : "bg-green-50 text-green-700 border border-green-100"
+                                      }`}>
                                       {cm.avgTimeMins} mins
                                     </span>
                                   </td>
@@ -648,7 +662,7 @@ const AdminDashboardPage = () => {
                     <p className="text-xs text-muted-foreground">Verify uploaded government ID documents and advance verification credentials:</p>
                   </div>
 
-                  {Object.values(workers).filter(w => w.idDocumentUrl && w.verificationStatus !== "id_verified" && w.verificationStatus !== "skill_verified").length === 0 ? (
+                  {Object.values(workers).filter(w => w.idDocumentUrl && w.verificationStatus !== "id_verified").length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center text-muted-foreground">
                       <ShieldCheck className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
                       <p className="font-semibold text-foreground text-sm">Review Queue Clean!</p>
@@ -657,7 +671,7 @@ const AdminDashboardPage = () => {
                   ) : (
                     <div className="grid gap-6 md:grid-cols-2">
                       {Object.values(workers)
-                        .filter(w => w.idDocumentUrl && w.verificationStatus !== "id_verified" && w.verificationStatus !== "skill_verified")
+                        .filter(w => w.idDocumentUrl && w.verificationStatus !== "id_verified")
                         .map((w) => {
                           const uProfile = users[w.uid];
                           return (
@@ -789,13 +803,13 @@ const AdminDashboardPage = () => {
                             {splittingBookingId === b.id ? (
                               <div className="border border-indigo-200 bg-indigo-50/20 rounded-xl p-4.5 space-y-4">
                                 <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wide">Structured Payout Split Arbitration</h4>
-                                
+
                                 <div className="space-y-2">
                                   <div className="flex justify-between text-xs font-bold text-indigo-950">
                                     <span>Refund to Client: {100 - clientSplitPercent}%</span>
                                     <span>Payout to Worker: {clientSplitPercent}%</span>
                                   </div>
-                                  
+
                                   <input
                                     type="range"
                                     min="0"
@@ -805,7 +819,7 @@ const AdminDashboardPage = () => {
                                     onChange={(e) => setClientSplitPercent(Number(e.target.value))}
                                     className="w-full accent-indigo-650 accent-indigo-600"
                                   />
-                                  
+
                                   <div className="grid grid-cols-2 gap-2 text-xs font-bold mt-2">
                                     <div className="bg-card border rounded p-2 text-center text-slate-700">
                                       Client Refund: ₹{Math.round((b.amount || 0) * ((100 - clientSplitPercent) / 100))}
@@ -893,9 +907,8 @@ const AdminDashboardPage = () => {
                       {flaggedItems.map((flag) => (
                         <div
                           key={flag.id}
-                          className={`rounded-2xl border bg-card p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition hover:shadow-card-hover ${
-                            flag.severity === "High" ? "border-amber-250 border-amber-300" : "border-slate-200"
-                          }`}
+                          className={`rounded-2xl border bg-card p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition hover:shadow-card-hover ${flag.severity === "High" ? "border-amber-250 border-amber-300" : "border-slate-200"
+                            }`}
                         >
                           <div className="flex items-start gap-3">
                             {flag.severity === "High" ? (
@@ -905,9 +918,8 @@ const AdminDashboardPage = () => {
                             )}
                             <div>
                               <div className="flex gap-2 items-center">
-                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${
-                                  flag.severity === "High" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-slate-100 text-slate-700 border-slate-200"
-                                }`}>
+                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${flag.severity === "High" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-slate-100 text-slate-700 border-slate-200"
+                                  }`}>
                                   {flag.type}
                                 </span>
                                 <span className="text-[10px] text-muted-foreground">
@@ -956,7 +968,7 @@ const AdminDashboardPage = () => {
                       className="w-full h-[450px] rounded-xl overflow-hidden"
                       style={{ zIndex: 1 }}
                     />
-                    
+
                     {/* Map Legend Overlay Card */}
                     <div className="absolute bottom-5 right-5 z-[10] bg-card/90 backdrop-blur border border-border p-3.5 rounded-xl text-[10px] font-bold space-y-1.5 max-w-[200px] shadow-lg">
                       <p className="text-xs border-b border-border pb-1 text-slate-700 uppercase tracking-wider">Density Legend</p>
@@ -1061,15 +1073,14 @@ const AdminDashboardPage = () => {
                                 <td className="px-5 py-3.5 capitalize font-semibold text-slate-800">{b.category}</td>
                                 <td className="px-5 py-3.5 capitalize text-slate-600">{b.locality || "Baner"}</td>
                                 <td className="px-5 py-3.5">
-                                  <span className={`inline-flex items-center gap-0.5 rounded px-2 py-0.5 text-[9px] font-black uppercase ${
-                                    {
-                                      pending: "bg-muted text-muted-foreground",
-                                      held: "bg-indigo-50 text-indigo-705 text-indigo-700",
-                                      released: "bg-emerald-50 text-emerald-705 text-emerald-700",
-                                      refunded: "bg-zinc-100 text-zinc-650",
-                                      disputed: "bg-amber-50 text-amber-705 text-amber-700",
-                                    }[b.paymentStatus || "pending"]
-                                  }`}>
+                                  <span className={`inline-flex items-center gap-0.5 rounded px-2 py-0.5 text-[9px] font-black uppercase ${{
+                                    pending: "bg-muted text-muted-foreground",
+                                    held: "bg-indigo-50 text-indigo-705 text-indigo-700",
+                                    released: "bg-emerald-50 text-emerald-705 text-emerald-700",
+                                    refunded: "bg-zinc-100 text-zinc-650",
+                                    disputed: "bg-amber-50 text-amber-705 text-amber-700",
+                                  }[b.paymentStatus || "pending"]
+                                    }`}>
                                     {b.paymentStatus}
                                   </span>
                                 </td>
@@ -1085,6 +1096,51 @@ const AdminDashboardPage = () => {
                         </table>
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 7: AUDIT LOGS */}
+              {activeTab === "audit" && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="font-heading text-lg font-bold text-foreground">Audit Logs</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Track all administrative actions and system events</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-border bg-card p-6 shadow-brand">
+                    <div className="space-y-3">
+                      {/* Mock audit log entries */}
+                      {[
+                        { action: "Worker verification approved", user: "admin@roozgaarsetu.com", timestamp: "2024-01-15 14:32", type: "success" },
+                        { action: "Booking dispute resolved", user: "admin@roozgaarsetu.com", timestamp: "2024-01-15 13:45", type: "info" },
+                        { action: "User role changed to worker", user: "admin@roozgaarsetu.com", timestamp: "2024-01-15 12:20", type: "warning" },
+                        { action: "Payment escrow released", user: "system", timestamp: "2024-01-15 11:15", type: "success" },
+                        { action: "Worker verification rejected", user: "admin@roozgaarsetu.com", timestamp: "2024-01-15 10:30", type: "error" },
+                        { action: "New user registered", user: "system", timestamp: "2024-01-15 09:45", type: "info" },
+                        { action: "Settings updated", user: "admin@roozgaarsetu.com", timestamp: "2024-01-15 08:00", type: "warning" },
+                      ].map((log, idx) => (
+                        <div key={idx} className="flex items-start gap-4 p-3 rounded-lg border border-border/50 hover:bg-muted/10 transition">
+                          <div className={`flex h-8 w-8 items-center justify-center rounded-full ${log.type === "success" ? "bg-emerald-100 text-emerald-600" :
+                              log.type === "error" ? "bg-red-100 text-red-600" :
+                                log.type === "warning" ? "bg-amber-100 text-amber-600" :
+                                  "bg-blue-100 text-blue-600"
+                            }`}>
+                            {log.type === "success" ? <CheckCircle className="h-4 w-4" /> :
+                              log.type === "error" ? <XCircle className="h-4 w-4" /> :
+                                log.type === "warning" ? <AlertTriangle className="h-4 w-4" /> :
+                                  <Info className="h-4 w-4" />}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium text-foreground">{log.action}</p>
+                              <span className="text-xs text-muted-foreground">{log.timestamp}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5">By: {log.user}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}

@@ -4,7 +4,8 @@ import { ref, get, update } from "firebase/database";
 import {
   Briefcase, Star, Phone, MapPin, FileText,
   ToggleLeft, ToggleRight, Loader2, CheckCircle, ChevronDown,
-  UploadCloud, CheckCircle2, ShieldAlert, FileCheck, Circle
+  UploadCloud, CheckCircle2, ShieldAlert, FileCheck, Circle,
+  Clock, DollarSign, Shield, Settings, Bell, Calendar, Zap
 } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/components/Auth/AuthProvider";
@@ -20,25 +21,32 @@ const WorkerProfile = () => {
   const { user } = useAuth();
 
   const [form, setForm] = useState<Omit<WorkerRecord, "uid" | "registeredAt" | "isVerified"> & { categories?: string[] }>({
-    category:     "",
-    categories:   [],
-    experience:   "",
-    phone:        "",
-    city:         "",
-    locality:     "",
-    bio:          "",
+    category: "",
+    categories: [],
+    experience: "",
+    phone: "",
+    city: "",
+    locality: "",
+    bio: "",
     availability: true,
   });
-  const [errors, setErrors]       = useState<FormErrors>({});
-  const [loading, setLoading]     = useState(true);
-  const [saving, setSaving]       = useState(false);
-  const [saved, setSaved]         = useState(false);
+  const [servicePreferences, setServicePreferences] = useState({
+    hourlyRate: 100,
+    preferredHours: { start: "08:00", end: "18:00" },
+    workingDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    instantPayoutEnabled: true,
+    urgentJobAlerts: true,
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
 
   // Verification status details
   const [verificationStatus, setVerificationStatus] = useState<VerificationTier>("unverified");
   const [idDocumentUrl, setIdDocumentUrl] = useState<string | undefined>(undefined);
-  
+
   // Simulated file uploader states
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -51,18 +59,23 @@ const WorkerProfile = () => {
       if (snap.exists()) {
         const data = snap.val() as WorkerRecord;
         setForm({
-          category:     data.category ?? "",
-          categories:   data.categories ?? (data.category ? [data.category] : []),
-          experience:   data.experience ?? "",
-          phone:        data.phone ?? "",
-          city:         data.city ?? "",
-          locality:     data.locality ?? "",
-          bio:          data.bio ?? "",
+          category: data.category ?? "",
+          categories: data.categories ?? (data.category ? [data.category] : []),
+          experience: data.experience ?? "",
+          phone: data.phone ?? "",
+          city: data.city ?? "",
+          locality: data.locality ?? "",
+          bio: data.bio ?? "",
           availability: data.availability ?? true,
         });
         setIsVerified(data.isVerified ?? false);
         setVerificationStatus(data.verificationStatus ?? "unverified");
         setIdDocumentUrl(data.idDocumentUrl);
+
+        // Load service preferences
+        if ((data as any).servicePreferences) {
+          setServicePreferences((data as any).servicePreferences);
+        }
       }
       setLoading(false);
     });
@@ -77,10 +90,10 @@ const WorkerProfile = () => {
   const validate = (): boolean => {
     const e: FormErrors = {};
     if (!form.categories || form.categories.length === 0) e.category = "Please select at least one category.";
-    if (!form.experience.trim())    e.experience  = "Experience is required.";
+    if (!form.experience.trim()) e.experience = "Experience is required.";
     if (!/^[6-9]\d{9}$/.test(form.phone)) e.phone = "Enter a valid 10-digit number.";
-    if (!form.city.trim())          e.city        = "City is required.";
-    if (form.bio.trim().length < 30) e.bio        = "Bio must be at least 30 characters.";
+    if (!form.city.trim()) e.city = "City is required.";
+    if (form.bio.trim().length < 30) e.bio = "Bio must be at least 30 characters.";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -103,9 +116,10 @@ const WorkerProfile = () => {
         category: form.categories?.[0] || form.category || "",
         categories: form.categories || [],
         verificationStatus: nextStatus,
+        servicePreferences: servicePreferences,
         updatedAt: new Date().toISOString(),
       };
-      
+
       const userUpdateData = {
         phone: form.phone,
         city: form.city,
@@ -146,10 +160,10 @@ const WorkerProfile = () => {
       setUploadProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
-          
+
           setTimeout(async () => {
             const mockUrl = `mock://uploaded-documents/${file.name}`;
-            
+
             // Advance status from unverified -> phone_verified if needed, else keep status
             // The uploaded ID document is sent and remains pending review.
             const targetStatus = verificationStatus === "unverified" ? "phone_verified" : verificationStatus;
@@ -210,7 +224,7 @@ const WorkerProfile = () => {
       <section className="py-10 lg:py-14">
         <div className="container">
           <div className="grid gap-8 lg:grid-cols-12">
-            
+
             {/* Form Column */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -260,17 +274,15 @@ const WorkerProfile = () => {
                               set_("categories", next);
                               set_("category", next[0] || "");
                             }}
-                            className={`flex items-center gap-3 rounded-xl border p-3.5 text-left text-sm font-semibold transition-all duration-200 ${
-                              isSelected
-                                ? "border-primary bg-primary/5 text-primary shadow-sm"
-                                : "border-border bg-background hover:bg-muted/40 hover:border-gray-300"
-                            }`}
+                            className={`flex items-center gap-3 rounded-xl border p-3.5 text-left text-sm font-semibold transition-all duration-200 ${isSelected
+                              ? "border-primary bg-primary/5 text-primary shadow-sm"
+                              : "border-border bg-background hover:bg-muted/40 hover:border-gray-300"
+                              }`}
                           >
-                            <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all ${
-                              isSelected
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-muted-foreground/40 bg-transparent"
-                            }`}>
+                            <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all ${isSelected
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-muted-foreground/40 bg-transparent"
+                              }`}>
                               {isSelected && (
                                 <svg className="h-3 w-3 fill-none stroke-current stroke-[3px]" viewBox="0 0 24 24">
                                   <polyline points="20 6 9 17 4 12" />
@@ -370,6 +382,133 @@ const WorkerProfile = () => {
                     {errors.bio && <p className="mt-1 text-xs text-destructive">{errors.bio}</p>}
                   </div>
 
+                  {/* Service Preferences Section */}
+                  <div className="mt-8 pt-8 border-t border-border">
+                    <div className="mb-5 flex items-center gap-2">
+                      <Settings className="h-4 w-4 text-primary" />
+                      <h3 className="font-heading text-lg font-semibold">Service Preferences</h3>
+                    </div>
+
+                    {/* Hourly Rate */}
+                    <div className="mb-6">
+                      <label htmlFor="wp-hourly-rate" className="mb-1.5 flex items-center gap-2 text-sm font-medium">
+                        <DollarSign className="h-4 w-4 text-primary" /> Hourly Rate (₹)
+                      </label>
+                      <input
+                        id="wp-hourly-rate"
+                        type="number"
+                        min="50"
+                        max="2000"
+                        step="50"
+                        value={servicePreferences.hourlyRate}
+                        onChange={(e) => setServicePreferences(p => ({ ...p, hourlyRate: parseInt(e.target.value) || 100 }))}
+                        className={inputCls}
+                      />
+                    </div>
+
+                    {/* Working Hours */}
+                    <div className="mb-6 grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="wp-start-time" className="mb-1.5 flex items-center gap-2 text-sm font-medium">
+                          <Clock className="h-4 w-4 text-primary" /> Start Time
+                        </label>
+                        <input
+                          id="wp-start-time"
+                          type="time"
+                          value={servicePreferences.preferredHours.start}
+                          onChange={(e) => setServicePreferences(p => ({ ...p, preferredHours: { ...p.preferredHours, start: e.target.value } }))}
+                          className={inputCls}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="wp-end-time" className="mb-1.5 flex items-center gap-2 text-sm font-medium">
+                          <Clock className="h-4 w-4 text-primary" /> End Time
+                        </label>
+                        <input
+                          id="wp-end-time"
+                          type="time"
+                          value={servicePreferences.preferredHours.end}
+                          onChange={(e) => setServicePreferences(p => ({ ...p, preferredHours: { ...p.preferredHours, end: e.target.value } }))}
+                          className={inputCls}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Working Days */}
+                    <div className="mb-6">
+                      <label className="mb-2 flex items-center gap-2 text-sm font-medium">
+                        <Calendar className="h-4 w-4 text-primary" /> Working Days
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => {
+                              setServicePreferences(p => ({
+                                ...p,
+                                workingDays: p.workingDays.includes(day)
+                                  ? p.workingDays.filter(d => d !== day)
+                                  : [...p.workingDays, day]
+                              }));
+                            }}
+                            className={`px-3 py-2 text-xs font-medium rounded-lg transition ${servicePreferences.workingDays.includes(day)
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                              }`}
+                          >
+                            {day}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Toggle Preferences */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Zap className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium text-foreground">Instant Payout</p>
+                            <p className="text-xs text-muted-foreground">Enable same-day payout with 5% fee</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setServicePreferences(p => ({ ...p, instantPayoutEnabled: !p.instantPayoutEnabled }))}
+                          className="transition"
+                        >
+                          {servicePreferences.instantPayoutEnabled ? (
+                            <ToggleRight className="h-6 w-6 text-primary" />
+                          ) : (
+                            <ToggleLeft className="h-6 w-6 text-muted-foreground" />
+                          )}
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Bell className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium text-foreground">Urgent Job Alerts</p>
+                            <p className="text-xs text-muted-foreground">Get notified for urgent job requests</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setServicePreferences(p => ({ ...p, urgentJobAlerts: !p.urgentJobAlerts }))}
+                          className="transition"
+                        >
+                          {servicePreferences.urgentJobAlerts ? (
+                            <ToggleRight className="h-6 w-6 text-primary" />
+                          ) : (
+                            <ToggleLeft className="h-6 w-6 text-muted-foreground" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                   <button
                     id="btn-worker-profile-save"
                     type="submit"
@@ -416,7 +555,7 @@ const WorkerProfile = () => {
                   {/* Step 2: ID */}
                   <div className="relative">
                     <span className="absolute -left-[31px] top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-card ring-2 ring-primary">
-                      {verificationStatus === "id_verified" || verificationStatus === "skill_verified" ? (
+                      {verificationStatus === "id_verified" ? (
                         <CheckCircle2 className="h-4 w-4 text-primary" />
                       ) : idDocumentUrl ? (
                         <Loader2 className="h-4 w-4 text-amber-500 animate-spin" />
@@ -426,30 +565,14 @@ const WorkerProfile = () => {
                     </span>
                     <h4 className="text-sm font-semibold text-foreground">Tier 2: Government ID Verification</h4>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {verificationStatus === "id_verified" || verificationStatus === "skill_verified"
+                      {verificationStatus === "id_verified"
                         ? "ID successfully checked and verified."
                         : idDocumentUrl
-                        ? "ID Document submitted. Awaiting admin review."
-                        : "Upload a photo or PDF of Aadhaar card, PAN card, or Driver License."}
+                          ? "ID Document submitted. Awaiting admin review."
+                          : "Upload a photo or PDF of Aadhaar card, PAN card, or Driver License."}
                     </p>
                   </div>
 
-                  {/* Step 3: Skill */}
-                  <div className="relative">
-                    <span className="absolute -left-[31px] top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-card ring-2 ring-primary">
-                      {verificationStatus === "skill_verified" ? (
-                        <CheckCircle2 className="h-4 w-4 text-primary" />
-                      ) : (
-                        <Circle className="h-3 w-3 text-muted-foreground" />
-                      )}
-                    </span>
-                    <h4 className="text-sm font-semibold text-foreground">Tier 3: Skill Tested Certificate</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {verificationStatus === "skill_verified"
-                        ? "Skill verified and certified by RoozgaarSetu admin."
-                        : "Schedule a physical background assessment and skill test with platform admin."}
-                    </p>
-                  </div>
                 </div>
               </div>
 
@@ -465,7 +588,7 @@ const WorkerProfile = () => {
                     <p className="text-xs text-muted-foreground mt-1 truncate max-w-full italic">
                       {idDocumentUrl.replace("mock://uploaded-documents/", "")}
                     </p>
-                    
+
                     <div className="mt-4 flex items-center justify-center gap-2">
                       <span className="text-xs text-amber-500 font-medium flex items-center gap-1">
                         <Loader2 className="h-3 w-3 animate-spin" /> Pending Review
@@ -489,7 +612,7 @@ const WorkerProfile = () => {
                       <UploadCloud className="h-8 w-8 text-muted-foreground mb-2" />
                       <span className="text-sm font-semibold">Select Government ID Card</span>
                       <span className="text-xs text-muted-foreground mt-1">Aadhaar, Passport, or PAN card</span>
-                      
+
                       <input
                         type="file"
                         accept=".jpg,.jpeg,.png,.pdf"

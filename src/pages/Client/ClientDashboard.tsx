@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ref, get, query, orderByChild, equalTo, update } from "firebase/database";
+import { ref, get, query, orderByChild, equalTo, update, push } from "firebase/database";
 import {
   CalendarDays, Clock, CheckCircle2, Loader2, User, CreditCard,
-  Lock, AlertTriangle, ShieldCheck, HelpCircle, Wallet
+  Lock, AlertTriangle, ShieldCheck, HelpCircle, Wallet, Heart, Star,
+  Filter, Bell, Settings, TrendingUp, DollarSign, MapPin, ChevronRight
 } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/components/Auth/AuthProvider";
@@ -14,18 +15,18 @@ import type { Booking, BookingStatus, PaymentStatus } from "@/types";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }> = {
-  pending:   { label: "Pending",   className: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-  accepted:  { label: "Approved",  className: "bg-blue-50 text-blue-700 border-blue-200" },
+  pending: { label: "Pending", className: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+  accepted: { label: "Approved", className: "bg-blue-50 text-blue-700 border-blue-200" },
   completed: { label: "Completed", className: "bg-green-50 text-green-700 border-green-200" },
-  declined:  { label: "Declined",  className: "bg-red-50 text-red-700 border-red-200" },
+  declined: { label: "Declined", className: "bg-red-50 text-red-700 border-red-200" },
 };
 
 const PAYMENT_STATUS_CONFIG: Record<PaymentStatus, { label: string; className: string }> = {
-  pending:   { label: "Awaiting Pay", className: "bg-muted text-muted-foreground border-border" },
-  held:      { label: "Escrow Held", className: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-  released:  { label: "Released",    className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  refunded:  { label: "Refunded",    className: "bg-zinc-100 text-zinc-600 border-zinc-200" },
-  disputed:  { label: "Disputed",    className: "bg-amber-50 text-amber-700 border-amber-200" },
+  pending: { label: "Awaiting Pay", className: "bg-muted text-muted-foreground border-border" },
+  held: { label: "Escrow Held", className: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+  released: { label: "Released", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  refunded: { label: "Refunded", className: "bg-zinc-100 text-zinc-600 border-zinc-200" },
+  disputed: { label: "Disputed", className: "bg-amber-50 text-amber-700 border-amber-200" },
 };
 
 const StatusBadge = ({ status }: { status: BookingStatus }) => {
@@ -53,6 +54,10 @@ const ClientDashboard = () => {
   const { user, profile } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savedWorkers, setSavedWorkers] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   // Modal payment state triggers
   const [paymentModalBooking, setPaymentModalBooking] = useState<Booking | null>(null);
@@ -83,16 +88,37 @@ const ClientDashboard = () => {
     });
   };
 
+  const fetchSavedWorkers = () => {
+    if (!user) return;
+    get(ref(database, `users/${user.uid}/savedWorkers`)).then((snap) => {
+      if (snap.exists()) {
+        setSavedWorkers(Object.values(snap.val()));
+      }
+    });
+  };
+
+  const fetchNotifications = () => {
+    if (!user) return;
+    get(ref(database, `users/${user.uid}/notifications`)).then((snap) => {
+      if (snap.exists()) {
+        const notifs = Object.entries(snap.val()).map(([id, n]: [string, any]) => ({ id, ...n }));
+        setNotifications(notifs.sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+      }
+    });
+  };
+
   useEffect(() => {
     fetchBookings();
+    fetchSavedWorkers();
+    fetchNotifications();
   }, [user]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
-  
+
   // Simulated checkout and escrow hold placement
   const triggerEscrowPayment = async () => {
     if (!paymentModalBooking || !user) return;
-    
+
     setPayingState("processing");
 
     // MOCK PAYMENT GATEWAY PROCESS
@@ -118,7 +144,7 @@ const ClientDashboard = () => {
         };
 
         await update(ref(database, `bookings/${paymentModalBooking.id}`), updates);
-        
+
         setPayingState("success");
         setTimeout(() => {
           setPaymentModalBooking(null);
@@ -136,7 +162,7 @@ const ClientDashboard = () => {
   // Release payment in escrow to worker
   const handleReleasePayment = async (b: Booking) => {
     if (!confirm("Are you sure you want to mark this job complete and release the funds to the worker? This action is irreversible.")) return;
-    
+
     setActionLoadingId(b.id);
     try {
       const updates = {
@@ -144,7 +170,7 @@ const ClientDashboard = () => {
         paymentStatus: "released" as PaymentStatus,
         updatedAt: new Date().toISOString(),
       };
-      
+
       await update(ref(database, `bookings/${b.id}`), updates);
       fetchBookings();
     } catch (err) {
@@ -170,7 +196,7 @@ const ClientDashboard = () => {
         notes: `${b.notes || ""}\n[DISPUTE REASON]: ${reason.trim()}`,
         updatedAt: new Date().toISOString(),
       };
-      
+
       await update(ref(database, `bookings/${b.id}`), updates);
       fetchBookings();
     } catch (err) {
@@ -182,9 +208,9 @@ const ClientDashboard = () => {
 
   // ── Summary counts ─────────────────────────────────────────────────────────
   const counts = {
-    total:     bookings.length,
-    pending:   bookings.filter((b) => b.status === "pending").length,
-    accepted:  bookings.filter((b) => b.status === "accepted").length,
+    total: bookings.length,
+    pending: bookings.filter((b) => b.status === "pending").length,
+    accepted: bookings.filter((b) => b.status === "accepted").length,
     completed: bookings.filter((b) => b.status === "completed").length,
   };
 
@@ -215,12 +241,61 @@ const ClientDashboard = () => {
                 {profile?.displayName ?? "Client"}
               </h1>
             </div>
-            <Link
-              to="/profile/client"
-              className="ml-auto rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
-            >
-              Edit Profile
-            </Link>
+            <div className="ml-auto flex items-center gap-3">
+              {/* Notifications Bell */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="rounded-lg border border-white/30 bg-white/10 p-2 text-white transition hover:bg-white/20"
+                >
+                  <Bell className="h-5 w-5" />
+                  {notifications.length > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                      {notifications.length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notifications Dropdown */}
+                <AnimatePresence>
+                  {showNotifications && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-border bg-card shadow-xl z-50"
+                    >
+                      <div className="border-b border-border px-4 py-3">
+                        <h3 className="font-semibold text-foreground">Notifications</h3>
+                      </div>
+                      <div className="max-h-64 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                            No notifications
+                          </div>
+                        ) : (
+                          notifications.map((notif) => (
+                            <div key={notif.id} className="border-b border-border px-4 py-3 last:border-0">
+                              <p className="text-sm text-foreground">{notif.message}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(notif.createdAt).toLocaleString()}
+                              </p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <Link
+                to="/profile/client"
+                className="rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
+              >
+                Edit Profile
+              </Link>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -229,10 +304,10 @@ const ClientDashboard = () => {
       <section className="border-b border-border bg-card">
         <div className="container grid grid-cols-2 gap-px md:grid-cols-4">
           {[
-            { label: "Total Bookings",     value: counts.total,     icon: CalendarDays, color: "text-primary" },
-            { label: "Pending",            value: counts.pending,   icon: Clock,        color: "text-yellow-600" },
-            { label: "Accepted/Approved",  value: counts.accepted,  icon: ShieldCheck,  color: "text-blue-600" },
-            { label: "Completed",          value: counts.completed, icon: CheckCircle2, color: "text-green-600" },
+            { label: "Total Bookings", value: counts.total, icon: CalendarDays, color: "text-primary" },
+            { label: "Pending", value: counts.pending, icon: Clock, color: "text-yellow-600" },
+            { label: "Accepted/Approved", value: counts.accepted, icon: ShieldCheck, color: "text-blue-600" },
+            { label: "Completed", value: counts.completed, icon: CheckCircle2, color: "text-green-600" },
           ].map(({ label, value, icon: Icon, color }) => (
             <div key={label} className="flex flex-col gap-1 px-6 py-5">
               <Icon className={`h-5 w-5 ${color}`} />
@@ -246,14 +321,31 @@ const ClientDashboard = () => {
       {/* Bookings list */}
       <section className="py-10 lg:py-14">
         <div className="container">
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <h2 className="font-heading text-xl font-semibold">My Bookings</h2>
-            <Link
-              to="/booking"
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-            >
-              + New Booking
-            </Link>
+            <div className="flex items-center gap-3">
+              {/* Filter Controls */}
+              <div className="flex items-center gap-2 bg-muted/30 rounded-lg p-1">
+                {["all", "pending", "accepted", "completed"].map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setFilterStatus(status)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${filterStatus === status
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                      }`}
+                  >
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                  </button>
+                ))}
+              </div>
+              <Link
+                to="/booking"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+              >
+                + New Booking
+              </Link>
+            </div>
           </div>
 
           {loading ? (
@@ -281,7 +373,7 @@ const ClientDashboard = () => {
               variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
               className="space-y-4"
             >
-              {bookings.map((b) => (
+              {bookings.filter((b) => filterStatus === "all" || b.status === filterStatus).map((b) => (
                 <motion.div
                   key={b.id}
                   variants={{
@@ -291,28 +383,28 @@ const ClientDashboard = () => {
                   className="rounded-2xl border border-border bg-card shadow-brand transition hover:shadow-card-hover"
                 >
                   <Link to={`/booking/${b.id}`} className="block p-5 pb-3">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium text-foreground capitalize">{b.category}</span>
-                        <StatusBadge status={b.status} />
-                        <PaymentStatusBadge status={b.paymentStatus || "pending"} />
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium text-foreground capitalize">{b.category}</span>
+                          <StatusBadge status={b.status} />
+                          <PaymentStatusBadge status={b.paymentStatus || "pending"} />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Worker: <span className="font-medium text-foreground">{b.workerName}</span>
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        Worker: <span className="font-medium text-foreground">{b.workerName}</span>
-                      </p>
+                      <div className="flex flex-col items-end gap-1 text-right">
+                        <p className="text-sm font-medium text-foreground">
+                          {new Date(b.date).toLocaleDateString("en-IN", {
+                            day: "numeric", month: "short", year: "numeric",
+                          })}
+                        </p>
+                        {b.amount && (
+                          <p className="text-sm font-bold text-primary">₹{b.amount}</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1 text-right">
-                      <p className="text-sm font-medium text-foreground">
-                        {new Date(b.date).toLocaleDateString("en-IN", {
-                          day: "numeric", month: "short", year: "numeric",
-                        })}
-                      </p>
-                      {b.amount && (
-                        <p className="text-sm font-bold text-primary">₹{b.amount}</p>
-                      )}
-                    </div>
-                  </div>
                   </Link>
 
                   {/* Actions & Escrow Logic controls */}
@@ -376,6 +468,41 @@ const ClientDashboard = () => {
           )}
         </div>
       </section>
+
+      {/* Saved Workers Section */}
+      {savedWorkers.length > 0 && (
+        <section className="py-10 lg:py-14 border-t border-border">
+          <div className="container">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="font-heading text-xl font-semibold flex items-center gap-2">
+                <Heart className="h-5 w-5 text-primary" /> Saved Workers
+              </h2>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {savedWorkers.map((worker) => (
+                <div key={worker.id} className="rounded-2xl border border-border bg-card p-5 shadow-brand transition hover:shadow-card-hover">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 font-heading text-lg font-bold text-primary">
+                      {worker.name?.split(" ").map((n: string) => n[0]).join("") || "W"}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground">{worker.name}</h3>
+                      <p className="text-sm text-muted-foreground">{worker.category || "Worker"}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{worker.location || "Location"}</p>
+                    </div>
+                  </div>
+                  <Link
+                    to={`/worker/${worker.id}`}
+                    className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                  >
+                    View Profile <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Escrow simulated payment dialog */}
       <AnimatePresence>

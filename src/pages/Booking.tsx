@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Calendar, Clock, MapPin, ArrowRight, CheckCircle2, Zap, TrendingUp } from "lucide-react";
+import { Calendar, Clock, MapPin, ArrowRight, CheckCircle2, Zap, TrendingUp, Loader2 } from "lucide-react";
 import { ref, push, set, get } from "firebase/database";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { database } from "@/lib/firebase";
 import { VoiceRecorder } from "@/components/ui/VoiceRecorder";
-import workersData from "@/data/workers.json";
 import type { Booking } from "@/types";
 
 const timeSlots = [
@@ -32,9 +31,49 @@ const Booking = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const workerId = searchParams.get("worker");
-  const worker = workersData.workers.find((w) => w.id === workerId);
+  const [worker, setWorker] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const [step, setStep] = useState(1);
+
+  // Fetch worker from Firebase
+  useEffect(() => {
+    const fetchWorker = async () => {
+      if (!workerId) return;
+      try {
+        const [workerSnap, userSnap] = await Promise.all([
+          get(ref(database, `workers/${workerId}`)),
+          get(ref(database, `users/${workerId}`))
+        ]);
+
+        if (workerSnap.exists()) {
+          const workerData = workerSnap.val();
+          const userData = userSnap.exists() ? userSnap.val() : {};
+
+          setWorker({
+            id: workerId,
+            name: userData.displayName || "Worker",
+            services: workerData.categories || [workerData.category],
+            rating: 4.5,
+            reviewCount: 0,
+            verified: workerData.isVerified || false,
+            verificationStatus: workerData.verificationStatus,
+            hourlyRate: 100,
+            location: workerData.city || workerData.locality || "Pune",
+            experience: workerData.experience || "0 years",
+            bio: workerData.bio || "Professional worker"
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch worker:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWorker();
+  }, [workerId]);
+
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [formData, setFormData] = useState({
@@ -71,12 +110,12 @@ const Booking = () => {
     const category = worker.services[0] || "general";
 
     const PREDEFINED: Record<string, { min: number; max: number }> = {
-      cooking:   { min: 4000, max: 6000 },
-      cleaning:  { min: 3000, max: 5000 },
+      cooking: { min: 4000, max: 6000 },
+      cleaning: { min: 3000, max: 5000 },
       childcare: { min: 6000, max: 9000 },
       eldercare: { min: 7000, max: 10000 },
-      laundry:   { min: 2000, max: 4000 },
-      driving:   { min: 8000, max: 12000 },
+      laundry: { min: 2000, max: 4000 },
+      driving: { min: 8000, max: 12000 },
     };
     const fallback = PREDEFINED[category] || { min: 3000, max: 5000 };
 
@@ -110,6 +149,16 @@ const Booking = () => {
       });
     });
   }, [worker]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container py-20 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,19 +233,17 @@ const Booking = () => {
           {[1, 2, 3].map((s) => (
             <div key={s} className="flex items-center gap-2">
               <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full font-medium transition-colors ${
-                  step >= s
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted/30 text-muted-foreground"
-                }`}
+                className={`flex h-10 w-10 items-center justify-center rounded-full font-medium transition-colors ${step >= s
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/30 text-muted-foreground"
+                  }`}
               >
                 {step > s ? <CheckCircle2 className="h-5 w-5" /> : s}
               </div>
               {s < 3 && (
                 <div
-                  className={`h-1 w-12 rounded transition-colors ${
-                    step > s ? "bg-primary" : "bg-muted/30"
-                  }`}
+                  className={`h-1 w-12 rounded transition-colors ${step > s ? "bg-primary" : "bg-muted/30"
+                    }`}
                 />
               )}
             </div>
@@ -240,11 +287,10 @@ const Booking = () => {
                     <button
                       key={time}
                       onClick={() => setSelectedTime(time)}
-                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                        selectedTime === time
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border hover:border-primary hover:bg-primary/5"
-                      }`}
+                      className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${selectedTime === time
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border hover:border-primary hover:bg-primary/5"
+                        }`}
                     >
                       {time}
                     </button>

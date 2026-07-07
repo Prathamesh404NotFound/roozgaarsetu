@@ -1,0 +1,9 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "bookings": {
+      ".indexOn": ["clientId", "workerId", "status"]
+    }
+  }
+}

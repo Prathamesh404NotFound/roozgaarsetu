@@ -5,7 +5,6 @@ import { FoundersSection } from "@/components/sections/FoundersSection";
 import { FeaturesSection } from "@/components/sections/FeaturesSection";
 import { HowItWorksSection } from "@/components/sections/HowItWorksSection";
 import { TrustSection } from "@/components/sections/TrustSection";
-import teamData from "@/data/team.json";
 
 const values = [
   {
@@ -158,18 +157,16 @@ const About = () => {
           <div className="mx-auto max-w-2xl text-center">
             <p className="mb-2 text-sm text-muted-foreground">Developed by</p>
             <h3 className="mb-2 font-heading text-xl font-bold">
-              {teamData?.developerCompany?.name ?? "Google Deepmind Team"}
+              RoozgaarSetu Tech
             </h3>
-            {teamData?.developerCompany?.website && (
-              <a
-                href={teamData.developerCompany.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline"
-              >
-                {teamData.developerCompany.website}
-              </a>
-            )}
+            <a
+              href="https://roozgaarsetu.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-primary hover:underline"
+            >
+              https://roozgaarsetu.com
+            </a>
           </div>
         </div>
       </section>

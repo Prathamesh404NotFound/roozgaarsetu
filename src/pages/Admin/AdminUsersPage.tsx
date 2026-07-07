@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ref, get } from "firebase/database";
-import { Search, Loader2, ArrowLeft, Mail, Calendar, User } from "lucide-react";
+import { ref, get, update, remove } from "firebase/database";
+import { Search, Loader2, ArrowLeft, Mail, Calendar, User, Edit2, Trash2, ShieldAlert } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { database } from "@/lib/firebase";
+import { toast } from "sonner";
 
 interface UserObj {
   id: string;
@@ -19,6 +20,9 @@ const AdminUsersPage = () => {
   const [users, setUsers] = useState<UserObj[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [newRole, setNewRole] = useState<"client" | "worker" | "admin">("client");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -62,6 +66,35 @@ const AdminUsersPage = () => {
       case "client":
       default:
         return "bg-blue-100 text-blue-700 border-blue-200";
+    }
+  };
+
+  const handleRoleChange = async (uid: string, role: "client" | "worker" | "admin") => {
+    setEditingUser(uid);
+    try {
+      await update(ref(database, `users/${uid}`), { role });
+      setUsers((prev) => prev.map((u) => (u.id === uid ? { ...u, role } : u)));
+      toast.success(`User role updated to ${role}`);
+    } catch (err) {
+      console.error("Failed to update role:", err);
+      toast.error("Failed to update user role");
+    } finally {
+      setEditingUser(null);
+    }
+  };
+
+  const handleDeleteUser = async (uid: string) => {
+    if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
+    setDeletingId(uid);
+    try {
+      await remove(ref(database, `users/${uid}`));
+      setUsers((prev) => prev.filter((u) => u.id !== uid));
+      toast.success("User deleted successfully");
+    } catch (err) {
+      console.error("Failed to delete user:", err);
+      toast.error("Failed to delete user");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -116,6 +149,7 @@ const AdminUsersPage = () => {
                       <th className="px-6 py-4">Role</th>
                       <th className="px-6 py-4">Created At</th>
                       <th className="px-6 py-4">Last Login</th>
+                      <th className="px-6 py-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-y-border">
@@ -155,6 +189,41 @@ const AdminUsersPage = () => {
                           ) : (
                             "-"
                           )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            {editingUser === u.id ? (
+                              <select
+                                value={newRole}
+                                onChange={(e) => setNewRole(e.target.value as "client" | "worker" | "admin")}
+                                onBlur={() => handleRoleChange(u.id, newRole)}
+                                className="text-xs rounded border border-border bg-background px-2 py-1 outline-none focus:ring-1 focus:ring-primary"
+                              >
+                                <option value="client">Client</option>
+                                <option value="worker">Worker</option>
+                                <option value="admin">Admin</option>
+                              </select>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setEditingUser(u.id);
+                                  setNewRole(u.role);
+                                }}
+                                className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                                title="Edit role"
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteUser(u.id)}
+                              disabled={deletingId === u.id || u.role === "admin"}
+                              className="rounded p-1.5 text-destructive hover:bg-destructive/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Delete user"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

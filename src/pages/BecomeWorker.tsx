@@ -10,12 +10,12 @@ import { database } from "@/lib/firebase";
 // ─── Service categories (mirrored from Services.tsx) ─────────────────────────
 
 export const SERVICE_CATEGORIES = [
-  { id: "cooking",    label: "Cooking" },
-  { id: "cleaning",   label: "House Cleaning" },
-  { id: "childcare",  label: "Childcare" },
-  { id: "eldercare",  label: "Elder Care" },
-  { id: "laundry",    label: "Laundry & Ironing" },
-  { id: "driving",    label: "Driver Services" },
+  { id: "cooking", label: "Cooking" },
+  { id: "cleaning", label: "House Cleaning" },
+  { id: "childcare", label: "Childcare" },
+  { id: "eldercare", label: "Elder Care" },
+  { id: "laundry", label: "Laundry & Ironing" },
+  { id: "driving", label: "Driver Services" },
 ] as const;
 
 export type ServiceCategoryId = (typeof SERVICE_CATEGORIES)[number]["id"];
@@ -32,7 +32,7 @@ interface WorkerRegistration {
   locality?: string;
   bio: string;
   isVerified: boolean;
-  verificationStatus: 'unverified' | 'phone_verified' | 'id_verified' | 'skill_verified';
+  verificationStatus: 'unverified' | 'phone_verified' | 'id_verified';
   registeredAt: string;
 }
 
@@ -234,17 +234,15 @@ const BecomeWorker = () => {
                             set_("categories", next);
                             set_("category", (next[0] || "") as ServiceCategoryId | "");
                           }}
-                          className={`flex items-center gap-3 rounded-xl border p-3.5 text-left text-sm font-semibold transition-all duration-200 ${
-                            isSelected
+                          className={`flex items-center gap-3 rounded-xl border p-3.5 text-left text-sm font-semibold transition-all duration-200 ${isSelected
                               ? "border-primary bg-primary/5 text-primary shadow-sm"
                               : "border-border bg-background hover:bg-muted/40 hover:border-gray-300"
-                          }`}
+                            }`}
                         >
-                          <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all ${
-                            isSelected
+                          <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all ${isSelected
                               ? "border-primary bg-primary text-primary-foreground"
                               : "border-muted-foreground/40 bg-transparent"
-                          }`}>
+                            }`}>
                             {isSelected && (
                               <svg className="h-3 w-3 fill-none stroke-current stroke-[3px]" viewBox="0 0 24 24">
                                 <polyline points="20 6 9 17 4 12" />

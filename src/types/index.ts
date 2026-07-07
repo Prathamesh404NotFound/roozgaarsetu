@@ -10,7 +10,7 @@ export interface UserProfile {
   locality?: string;
   role: 'client' | 'worker' | 'admin';
   isVerified: boolean;
-  verificationStatus?: 'unverified' | 'phone_verified' | 'id_verified' | 'skill_verified';
+  verificationStatus?: 'unverified' | 'phone_verified' | 'id_verified';
   category?: string; // Tagged primary service category for workers
   categories?: string[]; // Tagged skills/categories for workers
   createdAt: Date;
@@ -59,7 +59,7 @@ export interface WorkerRecord {
   bio: string;
   availability: boolean;
   isVerified: boolean;
-  verificationStatus?: 'unverified' | 'phone_verified' | 'id_verified' | 'skill_verified';
+  verificationStatus?: 'unverified' | 'phone_verified' | 'id_verified';
   idDocumentUrl?: string; // Doc uploaded by worker in verification portal
   registeredAt: string;
 }
