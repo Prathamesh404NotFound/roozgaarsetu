@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChefHat, Sparkles, Baby, Heart, Shirt, Car, ArrowRight } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
+import { SEO } from "@/components/SEO";
 
 const services = [
   {
@@ -82,6 +83,11 @@ const itemVariants = {
 const Services = () => {
   return (
     <Layout>
+      <SEO
+        title="Domestic Help Services in Kolhapur - Cooking, Cleaning & Caregivers"
+        description="Choose from our verified local services in Kolhapur including daily home cooks, deep house cleaning, licensed drivers, nannies, and eldercare caregivers."
+        path="/services"
+      />
       {/* Hero */}
       <section className="bg-gradient-hero py-16 lg:py-24">
         <div className="container">

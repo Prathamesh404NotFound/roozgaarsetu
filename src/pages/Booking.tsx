@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { database } from "@/lib/firebase";
 import { VoiceRecorder } from "@/components/ui/VoiceRecorder";
+import { SEO } from "@/components/SEO";
 import type { Booking } from "@/types";
 
 interface WorkerData {
@@ -224,6 +225,11 @@ const Booking = () => {
 
   return (
     <Layout>
+      <SEO
+        title={worker ? `Book ${worker.name} - Schedule a Service in Kolhapur` : "Book a Worker - RoozgaarSetu"}
+        description={worker ? `Complete your booking with ${worker.name} on RoozgaarSetu. Choose your date, time, and confirm your service details in just a few steps.` : "Book a verified domestic helper on RoozgaarSetu in Kolhapur, Maharashtra."}
+        path="/booking"
+      />
       <div className="bg-gradient-hero py-8">
         <div className="container">
           <motion.div

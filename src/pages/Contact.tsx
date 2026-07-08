@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { SEO } from "@/components/SEO";
 
 const contactInfo = [
   {
@@ -59,6 +60,11 @@ const Contact = () => {
 
   return (
     <Layout>
+      <SEO
+        title="Contact Us - Reach RoozgaarSetu in Kolhapur"
+        description="Get in touch with RoozgaarSetu for hiring queries, worker registrations, or support. Call, WhatsApp, or email us. Based in Kolhapur, Maharashtra."
+        path="/contact"
+      />
       {/* Hero */}
       <section className="bg-gradient-hero py-16 lg:py-24">
         <div className="container">

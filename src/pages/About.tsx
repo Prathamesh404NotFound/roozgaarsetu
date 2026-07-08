@@ -5,6 +5,7 @@ import { FoundersSection } from "@/components/sections/FoundersSection";
 import { FeaturesSection } from "@/components/sections/FeaturesSection";
 import { HowItWorksSection } from "@/components/sections/HowItWorksSection";
 import { TrustSection } from "@/components/sections/TrustSection";
+import { SEO } from "@/components/SEO";
 
 const values = [
   {
@@ -49,6 +50,11 @@ const itemVariants = {
 const About = () => {
   return (
     <Layout>
+      <SEO
+        title="About RoozgaarSetu - Kolhapur's Trusted Domestic Help Marketplace"
+        description="Learn how RoozgaarSetu is connecting verified domestic workers with families across Kolhapur, Maharashtra through a secure, multi-tier verification platform."
+        path="/about"
+      />
       {/* Hero */}
       <section className="bg-gradient-hero py-16 lg:py-24">
         <div className="container">

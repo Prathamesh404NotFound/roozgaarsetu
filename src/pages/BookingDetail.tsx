@@ -9,6 +9,7 @@ import {
 import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { database } from "@/lib/firebase";
+import { SEO } from "@/components/SEO";
 import type { Booking, BookingStatus, PaymentStatus } from "@/types";
 
 // ─── Step definitions ─────────────────────────────────────────────────────────
@@ -147,6 +148,11 @@ const BookingDetail = () => {
 
   return (
     <Layout>
+      <SEO
+        title={`${booking.category.charAt(0).toUpperCase() + booking.category.slice(1)} Booking Details`}
+        description={`Track and manage your ${booking.category} booking on RoozgaarSetu. View status, payment, and worker details for your service in Kolhapur.`}
+        path={`/booking/${id}`}
+      />
       {/* Hero */}
       <section className="bg-gradient-hero py-10 lg:py-14">
         <div className="container">

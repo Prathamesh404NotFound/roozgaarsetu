@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Static sitemap for RoozgaarSetu — covers all public, fixed-path routes.
+
+  Dynamic routes (/worker/:id, /booking/:id) are intentionally excluded from
+  static entries. To index individual worker profiles in Google Search, generate
+  per-worker <url> entries programmatically via a scheduled Firebase Cloud
+  Function or a build-time script that reads all workers/{uid} records and
+  writes a dynamic sitemap segment (e.g. public/sitemap-workers.xml with a
+  corresponding <sitemapindex> entry).
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Homepage -->
+  <url>
+    <loc>https://roozgaarsetu.com/</loc>
+    <lastmod>2026-07-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Browse all workers — core discovery page -->
+  <url>
+    <loc>https://roozgaarsetu.com/workers</loc>
+    <lastmod>2026-07-01</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Service category listing -->
+  <url>
+    <loc>https://roozgaarsetu.com/services</loc>
+    <lastmod>2026-07-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Become a worker / registration funnel -->
+  <url>
+    <loc>https://roozgaarsetu.com/become-worker</loc>
+    <lastmod>2026-07-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- About page -->
+  <url>
+    <loc>https://roozgaarsetu.com/about</loc>
+    <lastmod>2026-07-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Contact page -->
+  <url>
+    <loc>https://roozgaarsetu.com/contact</loc>
+    <lastmod>2026-07-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+</urlset>

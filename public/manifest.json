@@ -1,0 +1,37 @@
+{
+  "name": "RoozgaarSetu",
+  "short_name": "RoozgaarSetu",
+  "description": "Kolhapur's trusted C2C marketplace connecting families with verified cooks, cleaners, drivers, childcare, and eldercare professionals.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#004a99",
+  "lang": "en-IN",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Browse Workers",
+      "short_name": "Workers",
+      "description": "Find verified local helpers",
+      "url": "/workers",
+      "icons": [{ "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "All Services",
+      "short_name": "Services",
+      "description": "Explore service categories",
+      "url": "/services",
+      "icons": [{ "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}

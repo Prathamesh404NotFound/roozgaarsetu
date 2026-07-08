@@ -6,6 +6,7 @@ import { Briefcase, MapPin, Phone, Star, FileText, ChevronDown, Loader2, CheckCi
 import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { database } from "@/lib/firebase";
+import { SEO } from "@/components/SEO";
 
 // ─── Service categories (mirrored from Services.tsx) ─────────────────────────
 
@@ -174,6 +175,11 @@ const BecomeWorker = () => {
 
   return (
     <Layout>
+      <SEO
+        title="Become a Worker - Register & Earn with RoozgaarSetu in Kolhapur"
+        description="Register as a cook, cleaner, driver, babysitter, or caregiver on RoozgaarSetu. Create your worker profile, get verified, and start receiving job requests in Kolhapur."
+        path="/become-worker"
+      />
       {/* Hero */}
       <section className="bg-gradient-hero py-14 lg:py-20">
         <div className="container">

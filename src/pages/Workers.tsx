@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Search, MapPin, Filter, ChefHat, Sparkles, Baby, Heart, Shirt, Car, Users, Loader2, Clock } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
+import { SEO } from "@/components/SEO";
 import { Input } from "@/components/ui/input";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { RatingStars } from "@/components/ui/RatingStars";
@@ -164,6 +165,11 @@ const Workers = () => {
 
   return (
     <Layout>
+      <SEO
+        title="Find Verified Domestic Helpers & Local Workers in Kolhapur"
+        description="Search, view profiles, and hire background-checked cooks, housekeepers, drivers, babysitters, and eldercare assistants in Kolhapur."
+        path="/workers"
+      />
       {/* Hero */}
       <section className="bg-gradient-hero py-10 lg:py-16">
         <div className="container">

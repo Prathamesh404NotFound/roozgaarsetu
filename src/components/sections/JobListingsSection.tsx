@@ -38,6 +38,7 @@ const JobCard = ({ job }: { job: Job }) => {
             src={job.employerLogo}
             alt={job.employerName}
             className="w-12 h-12 rounded-lg object-cover"
+            loading="lazy"
           />
         )}
       </div>

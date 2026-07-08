@@ -24,6 +24,8 @@ import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { RatingStars } from "@/components/ui/RatingStars";
 import { ref, onValue } from "firebase/database";
 import { database } from "@/lib/firebase";
+import { SEO } from "@/components/SEO";
+
 
 interface WorkerData {
   id: string;
@@ -156,8 +158,18 @@ const WorkerProfile = () => {
     );
   }
 
+  const serviceCategory = worker.services?.[0];
+  const serviceCategoryLabel = serviceCategory
+    ? { cooking: "Cook", cleaning: "Cleaner", childcare: "Childcare Helper", eldercare: "Eldercare Assistant", laundry: "Laundry Helper", driving: "Driver" }[serviceCategory] || serviceCategory
+    : "Domestic Helper";
+
   return (
     <Layout>
+      <SEO
+        title={`Book ${worker.name} - Verified ${serviceCategoryLabel} in Kolhapur`}
+        description={`Hire ${worker.name}, a verified ${serviceCategoryLabel} in ${worker.location}. ${worker.experience} of experience. Book online through RoozgaarSetu.`}
+        path={`/worker/${id}`}
+      />
       {/* Back Link */}
       <div className="border-b border-border bg-card">
         <div className="container py-4">
