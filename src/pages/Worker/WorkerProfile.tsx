@@ -15,6 +15,14 @@ import { queueOfflineAction } from "@/lib/offlineManager";
 import { VerificationBadge, type VerificationTier } from "@/components/ui/VerificationBadge";
 import type { WorkerRecord } from "@/types";
 
+interface ServicePreferences {
+  hourlyRate?: number;
+  preferredHours?: { start: string; end: string };
+  workingDays?: string[];
+  instantPayoutEnabled?: boolean;
+  urgentJobAlerts?: boolean;
+}
+
 type FormErrors = Partial<Record<keyof Omit<WorkerRecord, "uid" | "registeredAt" | "isVerified" | "availability">, string>>;
 
 const WorkerProfile = () => {
@@ -73,8 +81,11 @@ const WorkerProfile = () => {
         setIdDocumentUrl(data.idDocumentUrl);
 
         // Load service preferences
-        if ((data as any).servicePreferences) {
-          setServicePreferences((data as any).servicePreferences);
+        if ((data as WorkerRecord & { servicePreferences?: ServicePreferences }).servicePreferences) {
+          setServicePreferences((prev) => ({
+            ...prev,
+            ...(data as WorkerRecord & { servicePreferences?: ServicePreferences }).servicePreferences,
+          }));
         }
       }
       setLoading(false);

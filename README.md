@@ -445,6 +445,57 @@ Follow this sequence exactly:
 
 ---
 
+## 🚢 Deploying
+
+The project uses Firebase Hosting for deployment with an automated CI/CD pipeline via GitHub Actions.
+
+### Quick Deploy
+
+To build, verify Firebase configuration, commit any pending changes, and push to main in one step:
+
+```bash
+npm run ship
+```
+
+This command performs the following in order:
+1. Runs `npm run lint` - fails if linting errors exist
+2. Runs `npm run test` - fails if tests fail
+3. Runs `npm run build` - builds the production bundle
+4. Runs Firebase configuration verification via `scripts/verify-firebase.js`
+5. Stages all changes with `git add -A`
+6. Commits changes with timestamp (skips if working tree is clean)
+7. Pushes to `origin main`
+
+The push to main automatically triggers the GitHub Actions workflow (`.github/workflows/firebase-hosting-merge.yml`) which deploys to Firebase Hosting.
+
+### Manual Deploy
+
+If you prefer manual control:
+
+```bash
+npm run build
+git add -A
+git commit -m "your message"
+git push origin main
+```
+
+### Firebase Configuration Verification
+
+The `scripts/verify-firebase.js` script checks:
+- `firebase.json` exists and `hosting.public` is set to `"dist"`
+- `.firebaserc` exists and `projects.default` is `"roozgaarsetu"`
+- Firebase CLI is authenticated (`firebase projects:list` succeeds)
+
+If any check fails, the script stops and displays a clear error message.
+
+### GitHub Actions
+
+- **Merge to main**: Deploys to production channel (`live`)
+- **Pull requests**: Deploys to preview channels for testing
+- **Manual trigger**: Can be re-run from Actions tab without new commit
+
+---
+
 ## ✅ Definition of Done
 
 A feature is complete when:

@@ -7,6 +7,42 @@ interface VoiceRecorderProps {
   onAudioCaptured: (base64Audio: string) => void;
 }
 
+interface SpeechRecognitionEvent {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  [index: number]: { transcript: string };
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: () => void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: { error: string }) => void;
+  onend: () => void;
+  start: () => void;
+  stop: () => void;
+}
+
+interface WindowWithSpeechRecognition extends Window {
+  SpeechRecognition?: {
+    new(): SpeechRecognition;
+  };
+  webkitSpeechRecognition?: {
+    new(): SpeechRecognition;
+  };
+}
+
 export const VoiceRecorder = ({ onTranscript, onAudioCaptured }: VoiceRecorderProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -15,12 +51,12 @@ export const VoiceRecorder = ({ onTranscript, onAudioCaptured }: VoiceRecorderPr
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   // Initialize Speech Recognition
   useEffect(() => {
     const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      (window as WindowWithSpeechRecognition).SpeechRecognition || (window as WindowWithSpeechRecognition).webkitSpeechRecognition;
 
     if (SpeechRecognition) {
       const rec = new SpeechRecognition();
@@ -32,7 +68,7 @@ export const VoiceRecorder = ({ onTranscript, onAudioCaptured }: VoiceRecorderPr
         setRecognizing(true);
       };
 
-      rec.onresult = (event: any) => {
+      rec.onresult = (event: SpeechRecognitionEvent) => {
         let finalTranscript = "";
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
@@ -44,7 +80,7 @@ export const VoiceRecorder = ({ onTranscript, onAudioCaptured }: VoiceRecorderPr
         }
       };
 
-      rec.onerror = (e: any) => {
+      rec.onerror = (e: { error: string }) => {
         console.error("Speech recognition error:", e);
       };
 
@@ -99,7 +135,7 @@ export const VoiceRecorder = ({ onTranscript, onAudioCaptured }: VoiceRecorderPr
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType || "audio/webm" });
-        
+
         // Convert Blob to Base64 data URL
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);

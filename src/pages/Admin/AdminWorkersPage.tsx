@@ -22,6 +22,18 @@ interface WorkerRecord {
   email?: string;
 }
 
+interface FirebaseWorker {
+  category?: string;
+  experience?: string;
+  phone?: string;
+  city?: string;
+  bio?: string;
+  isVerified?: boolean;
+  verificationStatus?: VerificationTier;
+  idDocumentUrl?: string;
+  registeredAt?: string;
+}
+
 const AdminWorkersPage = () => {
   const [workers, setWorkers] = useState<WorkerRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,7 +51,7 @@ const AdminWorkersPage = () => {
         const workersData = workersSnap.val();
         const usersData = usersSnap.exists() ? usersSnap.val() : {};
 
-        const list: WorkerRecord[] = Object.entries(workersData).map(([uid, w]: [string, any]) => {
+        const list: WorkerRecord[] = Object.entries(workersData).map(([uid, w]: [string, FirebaseWorker]) => {
           const userObj = usersData[uid] || {};
           return {
             uid,

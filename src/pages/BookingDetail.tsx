@@ -21,11 +21,11 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  { key: "posted",      label: "Posted",      description: "Job request submitted",                  icon: Briefcase },
-  { key: "accepted",    label: "Accepted",    description: "Worker confirmed the request",           icon: User },
-  { key: "in_progress", label: "In Progress", description: "Funds held in escrow & work started",   icon: Lock },
-  { key: "completed",   label: "Completed",   description: "Work finished, awaiting payment",       icon: CheckCircle2 },
-  { key: "paid",        label: "Paid",        description: "Payment released to worker",            icon: ShieldCheck },
+  { key: "posted", label: "Posted", description: "Job request submitted", icon: Briefcase },
+  { key: "accepted", label: "Accepted", description: "Worker confirmed the request", icon: User },
+  { key: "in_progress", label: "In Progress", description: "Funds held in escrow & work started", icon: Lock },
+  { key: "completed", label: "Completed", description: "Work finished, awaiting payment", icon: CheckCircle2 },
+  { key: "paid", label: "Paid", description: "Payment released to worker", icon: ShieldCheck },
 ];
 
 function getActiveStep(b: Booking): number {
@@ -37,15 +37,15 @@ function getActiveStep(b: Booking): number {
 }
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
-  pending:   "Pending",
-  accepted:  "Accepted",
+  pending: "Pending",
+  accepted: "Accepted",
   completed: "Completed",
-  declined:  "Declined",
+  declined: "Declined",
 };
 
 const PAY_LABEL: Record<PaymentStatus, string> = {
-  pending:  "No Escrow Deposit",
-  held:     "Escrow Held",
+  pending: "No Escrow Deposit",
+  held: "Escrow Held",
   released: "Released to Worker",
   refunded: "Refunded to Client",
   disputed: "Disputed",
@@ -82,7 +82,7 @@ const BookingDetail = () => {
 
   const isClient = user?.uid === booking?.clientId;
   const isWorker = user?.uid === booking?.workerId;
-  const isAdmin  = profile?.role === "admin";
+  const isAdmin = profile?.role === "admin";
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
@@ -151,9 +151,9 @@ const BookingDetail = () => {
       <section className="bg-gradient-hero py-10 lg:py-14">
         <div className="container">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-            <Link to={-1 as any} className="inline-flex items-center gap-1.5 text-sm font-medium text-white/80 hover:text-white mb-3">
+            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1.5 text-sm font-medium text-white/80 hover:text-white mb-3">
               <ArrowLeft className="h-4 w-4" /> Back
-            </Link>
+            </button>
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="font-heading text-2xl font-bold text-white capitalize">
                 {booking.category} Booking
@@ -183,17 +183,16 @@ const BookingDetail = () => {
 
                 <div className="space-y-6">
                   {STEPS.map((step, idx) => {
-                    const isDone    = idx < activeStep;
+                    const isDone = idx < activeStep;
                     const isCurrent = idx === activeStep;
-                    const Icon      = step.icon;
+                    const Icon = step.icon;
                     return (
                       <div key={step.key} className="relative flex items-start gap-4">
                         {/* Step circle */}
-                        <div className={`relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all ${
-                          isDone    ? "bg-primary border-primary text-primary-foreground" :
-                          isCurrent ? "bg-primary/10 border-primary text-primary animate-pulse" :
-                                      "bg-card border-border text-muted-foreground"
-                        }`}>
+                        <div className={`relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all ${isDone ? "bg-primary border-primary text-primary-foreground" :
+                            isCurrent ? "bg-primary/10 border-primary text-primary animate-pulse" :
+                              "bg-card border-border text-muted-foreground"
+                          }`}>
                           {isDone ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-4 w-4" />}
                         </div>
 
@@ -348,12 +347,12 @@ const BookingDetail = () => {
               <h3 className="font-heading text-base font-semibold mb-4">Booking Details</h3>
               <dl className="space-y-3 text-sm">
                 {[
-                  { label: "Category",       value: booking.category },
-                  { label: "Client",         value: booking.clientName },
-                  { label: "Worker",         value: booking.workerName },
-                  { label: "Date",           value: new Date(booking.date).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" }) },
-                  { label: "Amount",         value: booking.amount ? `₹${booking.amount}` : "—" },
-                  { label: "Locality",       value: booking.locality || "—" },
+                  { label: "Category", value: booking.category },
+                  { label: "Client", value: booking.clientName },
+                  { label: "Worker", value: booking.workerName },
+                  { label: "Date", value: new Date(booking.date).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" }) },
+                  { label: "Amount", value: booking.amount ? `₹${booking.amount}` : "—" },
+                  { label: "Locality", value: booking.locality || "—" },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex justify-between">
                     <dt className="text-muted-foreground">{label}</dt>

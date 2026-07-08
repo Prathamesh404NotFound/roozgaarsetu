@@ -25,6 +25,37 @@ import { RatingStars } from "@/components/ui/RatingStars";
 import { ref, get } from "firebase/database";
 import { database } from "@/lib/firebase";
 
+interface WorkerData {
+  id: string;
+  name: string;
+  location: string;
+  verified?: boolean;
+  verificationStatus?: string;
+  category?: string;
+  categories?: string[];
+  experience?: string;
+  city?: string;
+  locality?: string;
+  bio?: string;
+  isVerified?: boolean;
+  languages?: string[];
+  rating?: number;
+  reviews?: Review[];
+  reviewCount?: number;
+  hourlyRate?: number;
+  availability?: string[];
+  services?: string[];
+  description?: string;
+}
+
+interface Review {
+  id: string;
+  name: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
+
 const serviceIcons: Record<string, React.ElementType> = {
   cooking: ChefHat,
   cleaning: Sparkles,
@@ -45,7 +76,7 @@ const serviceLabels: Record<string, string> = {
 
 const WorkerProfile = () => {
   const { id } = useParams<{ id: string }>();
-  const [worker, setWorker] = useState<any>(null);
+  const [worker, setWorker] = useState<WorkerData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -150,7 +181,7 @@ const WorkerProfile = () => {
                     </h1>
                     <VerificationBadge
                       status={
-                        (worker as any).verificationStatus ||
+                        (worker.verificationStatus as any) ||
                         (worker.verified ? "id_verified" : "unverified")
                       }
                     />
@@ -236,7 +267,7 @@ const WorkerProfile = () => {
                       className="rounded-xl border border-border bg-card p-4"
                     >
                       <div className="mb-2 flex items-center justify-between">
-                        <span className="font-medium">{review.user}</span>
+                        <span className="font-medium">{review.name}</span>
                         <RatingStars rating={review.rating} size="sm" showValue={false} />
                       </div>
                       <p className="text-muted-foreground">{review.comment}</p>

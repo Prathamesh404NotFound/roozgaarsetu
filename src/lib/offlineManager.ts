@@ -6,7 +6,7 @@ export interface OfflineAction {
   id: string;
   type: "accept_job" | "complete_job" | "toggle_availability";
   path: string;
-  data: any;
+  data: Record<string, unknown>;
   description: string;
   timestamp: number;
 }
@@ -37,7 +37,7 @@ const saveOfflineQueue = (queue: OfflineAction[]) => {
 export const queueOfflineAction = (
   type: OfflineAction["type"],
   path: string,
-  data: any,
+  data: Record<string, unknown>,
   description: string
 ): OfflineAction => {
   const queue = getOfflineQueue();

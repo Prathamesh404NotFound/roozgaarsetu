@@ -53,7 +53,7 @@ interface CategoryHealthMetric {
 }
 
 const AdminDashboardPage = () => {
-  const [activeTab, setActiveTab] = useState<"overview" | "verify" | "disputes" | "fraud" | "heatmap" | "ledger">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "verify" | "disputes" | "fraud" | "heatmap" | "ledger" | "audit">("overview");
   const [loading, setLoading] = useState(true);
 
   // Raw database storage states
@@ -445,7 +445,7 @@ const AdminDashboardPage = () => {
   };
 
   // Overview metrics calculations
-  let escrowTotals = { held: 0, released: 0, refunded: 0, disputed: 0, commissions: 0 };
+  const escrowTotals = { held: 0, released: 0, refunded: 0, disputed: 0, commissions: 0 };
 
   bookings.forEach((b) => {
     const amt = b.amount || 0;
@@ -471,7 +471,7 @@ const AdminDashboardPage = () => {
   });
 
   // Calculate filtered ledger sums
-  let ledgerTotals = { held: 0, released: 0, refunded: 0, disputed: 0, commissions: 0 };
+  const ledgerTotals = { held: 0, released: 0, refunded: 0, disputed: 0, commissions: 0 };
   filteredLedger.forEach((b) => {
     const amt = b.amount || 0;
     if (b.payoutFeeDeduction) ledgerTotals.commissions += b.payoutFeeDeduction;
@@ -545,7 +545,7 @@ const AdminDashboardPage = () => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id as "overview" | "verify" | "disputes" | "fraud" | "heatmap" | "ledger" | "audit")}
                   className={tabClassName}
                 >
                   <Icon className="h-4 w-4" />
@@ -1122,9 +1122,9 @@ const AdminDashboardPage = () => {
                       ].map((log, idx) => (
                         <div key={idx} className="flex items-start gap-4 p-3 rounded-lg border border-border/50 hover:bg-muted/10 transition">
                           <div className={`flex h-8 w-8 items-center justify-center rounded-full ${log.type === "success" ? "bg-emerald-100 text-emerald-600" :
-                              log.type === "error" ? "bg-red-100 text-red-600" :
-                                log.type === "warning" ? "bg-amber-100 text-amber-600" :
-                                  "bg-blue-100 text-blue-600"
+                            log.type === "error" ? "bg-red-100 text-red-600" :
+                              log.type === "warning" ? "bg-amber-100 text-amber-600" :
+                                "bg-blue-100 text-blue-600"
                             }`}>
                             {log.type === "success" ? <CheckCircle className="h-4 w-4" /> :
                               log.type === "error" ? <XCircle className="h-4 w-4" /> :

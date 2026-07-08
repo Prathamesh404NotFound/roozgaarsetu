@@ -13,6 +13,33 @@ import { database } from "@/lib/firebase";
 import { useTranslation } from "react-i18next";
 import type { Booking, WorkerRecord } from "@/types";
 
+interface WorkerDisplay {
+  id: string;
+  name: string;
+  services: string[];
+  rating: number;
+  reviewCount: number;
+  verified: boolean;
+  verificationStatus?: string;
+  hourlyRate: number;
+  location: string;
+  experience: string;
+  bio: string;
+  availability?: boolean;
+}
+
+interface FirebaseWorkerData {
+  categories?: string[];
+  category?: string;
+  isVerified?: boolean;
+  verificationStatus?: string;
+  city?: string;
+  locality?: string;
+  experience?: string;
+  bio?: string;
+  availability?: boolean;
+}
+
 const serviceIcons: Record<string, React.ElementType> = {
   cooking: ChefHat,
   cleaning: Sparkles,
@@ -42,7 +69,7 @@ const Workers = () => {
   const [selectedService, setSelectedService] = useState(initialService);
   const [selectedLocation, setSelectedLocation] = useState("");
   const [nearbyHireCount, setNearbyHireCount] = useState<Record<string, number>>({});
-  const [workers, setWorkers] = useState<any[]>([]);
+  const [workers, setWorkers] = useState<WorkerDisplay[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch workers from Firebase
@@ -58,7 +85,7 @@ const Workers = () => {
           const workersData = workersSnap.val();
           const usersData = usersSnap.exists() ? usersSnap.val() : {};
 
-          const workersList = Object.entries(workersData).map(([uid, w]: [string, any]) => {
+          const workersList = Object.entries(workersData).map(([uid, w]: [string, FirebaseWorkerData]) => {
             const user = usersData[uid] || {};
             return {
               id: uid,

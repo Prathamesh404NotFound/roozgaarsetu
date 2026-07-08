@@ -11,18 +11,18 @@ import { database } from "@/lib/firebase";
 import type { Booking, BookingStatus, PaymentStatus } from "@/types";
 
 const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }> = {
-  pending:   { label: "Pending",   className: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-  accepted:  { label: "Accepted",  className: "bg-blue-50 text-blue-700 border-blue-200" },
+  pending: { label: "Pending", className: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+  accepted: { label: "Accepted", className: "bg-blue-50 text-blue-700 border-blue-200" },
   completed: { label: "Completed", className: "bg-green-50 text-green-700 border-green-200" },
-  declined:  { label: "Declined",  className: "bg-red-50 text-red-700 border-red-200" },
+  declined: { label: "Declined", className: "bg-red-50 text-red-700 border-red-200" },
 };
 
 const PAYMENT_STATUS_CONFIG: Record<PaymentStatus, { label: string; className: string }> = {
-  pending:   { label: "No Deposit", className: "bg-muted text-muted-foreground border-border" },
-  held:      { label: "Escrow Held", className: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-  released:  { label: "Released",    className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  refunded:  { label: "Refunded",    className: "bg-zinc-100 text-zinc-650 border-zinc-200" },
-  disputed:  { label: "Disputed",    className: "bg-amber-50 text-amber-700 border-amber-200" },
+  pending: { label: "No Deposit", className: "bg-muted text-muted-foreground border-border" },
+  held: { label: "Escrow Held", className: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+  released: { label: "Released", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  refunded: { label: "Refunded", className: "bg-zinc-100 text-zinc-650 border-zinc-200" },
+  disputed: { label: "Disputed", className: "bg-amber-50 text-amber-700 border-amber-200" },
 };
 
 const StatusBadge = ({ status }: { status: BookingStatus }) => {
@@ -54,7 +54,7 @@ const AdminBookingsPage = () => {
       const snap = await get(ref(database, "bookings"));
       if (snap.exists()) {
         const data = snap.val();
-        const list = Object.entries(data).map(([id, b]: [string, any]) => ({
+        const list = Object.entries(data).map(([id, b]: [string, Booking]) => ({
           ...b,
           id,
           paymentStatus: b.paymentStatus || "pending",
@@ -202,7 +202,7 @@ const AdminBookingsPage = () => {
                     {b.amount && (
                       <p className="text-lg font-bold text-primary">₹{b.amount}</p>
                     )}
-                    
+
                     {/* Admin Actions */}
                     <div className="flex flex-wrap gap-2 justify-end mt-2">
                       {/* Active Dispute Resolution Controls */}
@@ -247,7 +247,7 @@ const AdminBookingsPage = () => {
                           </button>
                         </>
                       )}
-                      
+
                       {b.status === "accepted" && b.paymentStatus !== "disputed" && (
                         <button
                           id={`btn-admin-complete-${b.id}`}

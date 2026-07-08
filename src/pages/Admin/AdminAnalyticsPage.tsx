@@ -10,6 +10,15 @@ import { Layout } from "@/components/layout/Layout";
 import { database } from "@/lib/firebase";
 import type { Booking } from "@/types";
 
+interface FirebaseBooking extends Booking {
+  createdAt: string;
+  locality?: string;
+}
+
+interface FirebaseUser {
+  role?: string;
+}
+
 interface AnalyticsData {
   totalUsers: number;
   totalWorkers: number;
@@ -23,6 +32,8 @@ interface AnalyticsData {
   monthlyRevenue: Array<{ month: string; revenue: number; bookings: number }>;
   topLocalities: Array<{ locality: string; count: number }>;
 }
+
+type TimeRange = "7d" | "30d" | "90d";
 
 const AdminAnalyticsPage = () => {
   const [loading, setLoading] = useState(true);
@@ -46,41 +57,41 @@ const AdminAnalyticsPage = () => {
       const workers = workersSnap.exists() ? workersSnap.val() : {};
       const bookings = bookingsSnap.exists() ? bookingsSnap.val() : {};
 
-      const bookingsList = Object.entries(bookings).map(([id, b]: [string, any]) => ({ id, ...b }));
-      
+      const bookingsList = Object.entries(bookings).map(([id, b]: [string, FirebaseBooking]) => ({ id, ...b }));
+
       // Calculate time-based filter
       const now = new Date();
       const daysAgo = timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : 90;
       const cutoffDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
 
-      const filteredBookings = bookingsList.filter((b: any) => {
+      const filteredBookings = bookingsList.filter((b: FirebaseBooking) => {
         const bookingDate = new Date(b.createdAt);
         return bookingDate >= cutoffDate;
       });
 
       // Category breakdown
       const categoryBreakdown: Record<string, number> = {};
-      filteredBookings.forEach((b: any) => {
+      filteredBookings.forEach((b: FirebaseBooking) => {
         categoryBreakdown[b.category] = (categoryBreakdown[b.category] || 0) + 1;
       });
 
       // Monthly revenue
       const monthlyRevenue: Array<{ month: string; revenue: number; bookings: number }> = [];
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      
+
       for (let i = 5; i >= 0; i--) {
         const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const monthStr = `${months[monthDate.getMonth()]} ${monthDate.getFullYear()}`;
-        
-        const monthBookings = bookingsList.filter((b: any) => {
+
+        const monthBookings = bookingsList.filter((b: FirebaseBooking) => {
           const bookingDate = new Date(b.createdAt);
-          return bookingDate.getMonth() === monthDate.getMonth() && 
-                 bookingDate.getFullYear() === monthDate.getFullYear();
+          return bookingDate.getMonth() === monthDate.getMonth() &&
+            bookingDate.getFullYear() === monthDate.getFullYear();
         });
 
         const revenue = monthBookings
-          .filter((b: any) => b.paymentStatus === "released")
-          .reduce((sum: number, b: any) => sum + (b.amount || 0), 0);
+          .filter((b: FirebaseBooking) => b.paymentStatus === "released")
+          .reduce((sum: number, b: FirebaseBooking) => sum + (b.amount || 0), 0);
 
         monthlyRevenue.push({
           month: monthStr,
@@ -91,7 +102,7 @@ const AdminAnalyticsPage = () => {
 
       // Top localities
       const localityCounts: Record<string, number> = {};
-      filteredBookings.forEach((b: any) => {
+      filteredBookings.forEach((b: FirebaseBooking) => {
         if (b.locality) {
           localityCounts[b.locality] = (localityCounts[b.locality] || 0) + 1;
         }
@@ -103,18 +114,18 @@ const AdminAnalyticsPage = () => {
         .slice(0, 5);
 
       const totalRevenue = filteredBookings
-        .filter((b: any) => b.paymentStatus === "released")
-        .reduce((sum: number, b: any) => sum + (b.amount || 0), 0);
+        .filter((b: FirebaseBooking) => b.paymentStatus === "released")
+        .reduce((sum: number, b: FirebaseBooking) => sum + (b.amount || 0), 0);
 
       setAnalytics({
         totalUsers: Object.keys(users).length,
         totalWorkers: Object.keys(workers).length,
-        totalClients: Object.values(users).filter((u: any) => u.role === "client").length,
+        totalClients: Object.values(users).filter((u: FirebaseUser) => u.role === "client").length,
         totalBookings: filteredBookings.length,
         totalRevenue,
-        activeBookings: filteredBookings.filter((b: any) => b.status === "accepted").length,
-        completedBookings: filteredBookings.filter((b: any) => b.status === "completed").length,
-        pendingBookings: filteredBookings.filter((b: any) => b.status === "pending").length,
+        activeBookings: filteredBookings.filter((b: FirebaseBooking) => b.status === "accepted").length,
+        completedBookings: filteredBookings.filter((b: FirebaseBooking) => b.status === "completed").length,
+        pendingBookings: filteredBookings.filter((b: FirebaseBooking) => b.status === "pending").length,
         categoryBreakdown,
         monthlyRevenue,
         topLocalities
@@ -169,18 +180,17 @@ const AdminAnalyticsPage = () => {
               <h1 className="font-heading text-2xl font-bold text-white">Analytics Dashboard</h1>
               <p className="mt-1 text-white/70">Platform performance metrics and insights</p>
             </div>
-            
+
             {/* Time Range Selector */}
             <div className="flex items-center gap-2 bg-white/10 rounded-lg p-1">
               {["7d", "30d", "90d"].map((range) => (
                 <button
                   key={range}
-                  onClick={() => setTimeRange(range as any)}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition ${
-                    timeRange === range
-                      ? "bg-white text-foreground"
-                      : "text-white/70 hover:text-white"
-                  }`}
+                  onClick={() => setTimeRange(range as TimeRange)}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition ${timeRange === range
+                    ? "bg-white text-foreground"
+                    : "text-white/70 hover:text-white"
+                    }`}
                 >
                   {range === "7d" ? "7 Days" : range === "30d" ? "30 Days" : "90 Days"}
                 </button>
@@ -217,7 +227,7 @@ const AdminAnalyticsPage = () => {
       {/* Charts Section */}
       <section className="py-10">
         <div className="container grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
+
           {/* Monthly Revenue Chart */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -229,7 +239,7 @@ const AdminAnalyticsPage = () => {
                 <BarChart3 className="h-5 w-5 text-primary" /> Monthly Revenue
               </h2>
             </div>
-            
+
             <div className="space-y-4">
               {analytics.monthlyRevenue.map((month) => (
                 <div key={month.month} className="space-y-2">
@@ -261,7 +271,7 @@ const AdminAnalyticsPage = () => {
                 <PieChart className="h-5 w-5 text-primary" /> Category Breakdown
               </h2>
             </div>
-            
+
             <div className="space-y-4">
               {Object.entries(analytics.categoryBreakdown).map(([category, count]) => (
                 <div key={category} className="space-y-2">
@@ -292,7 +302,7 @@ const AdminAnalyticsPage = () => {
                 <MapPin className="h-5 w-5 text-primary" /> Top Localities
               </h2>
             </div>
-            
+
             <div className="space-y-3">
               {analytics.topLocalities.map((item, idx) => (
                 <div key={item.locality} className="flex items-center justify-between">
@@ -320,7 +330,7 @@ const AdminAnalyticsPage = () => {
                 <Activity className="h-5 w-5 text-primary" /> Booking Status
               </h2>
             </div>
-            
+
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 rounded-xl bg-yellow-50 border border-yellow-200">
                 <div className="flex items-center gap-3">

@@ -13,6 +13,16 @@ import { database } from "@/lib/firebase";
 import { VoiceRecorder } from "@/components/ui/VoiceRecorder";
 import type { Booking } from "@/types";
 
+interface WorkerData {
+  id?: string;
+  name: string;
+  services: string[];
+  city?: string;
+  locality?: string;
+  category?: string;
+  hourlyRate?: number;
+}
+
 const timeSlots = [
   "08:00 AM",
   "09:00 AM",
@@ -31,7 +41,7 @@ const Booking = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const workerId = searchParams.get("worker");
-  const [worker, setWorker] = useState<any>(null);
+  const [worker, setWorker] = useState<WorkerData | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [step, setStep] = useState(1);
@@ -99,7 +109,7 @@ const Booking = () => {
         name: prev.name || profile?.displayName || user?.displayName || "",
         phone: prev.phone || profile?.phone || "",
         address: prev.address || profile?.city || "",
-        locality: prev.locality || (profile as any)?.locality || "",
+        locality: prev.locality || (profile as { locality?: string })?.locality || "",
       }));
     }
   }, [profile, user]);

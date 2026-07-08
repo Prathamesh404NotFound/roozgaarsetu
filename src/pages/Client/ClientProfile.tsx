@@ -6,6 +6,22 @@ import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { database } from "@/lib/firebase";
 
+interface UserPreferences {
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  pushNotifications: boolean;
+  language: string;
+  currency: string;
+}
+
+interface UserProfile {
+  displayName: string;
+  phone?: string;
+  city?: string;
+  locality?: string;
+  preferences?: UserPreferences;
+}
+
 type FormErrors = Partial<Record<"displayName" | "phone" | "city", string>>;
 
 const ClientProfile = () => {
@@ -15,14 +31,14 @@ const ClientProfile = () => {
     displayName: profile?.displayName ?? "",
     phone: profile?.phone ?? "",
     city: profile?.city ?? "",
-    locality: (profile as any)?.locality ?? "",
+    locality: (profile as UserProfile)?.locality ?? "",
   });
   const [preferences, setPreferences] = useState({
-    emailNotifications: (profile as any)?.preferences?.emailNotifications ?? true,
-    smsNotifications: (profile as any)?.preferences?.smsNotifications ?? false,
-    pushNotifications: (profile as any)?.preferences?.pushNotifications ?? true,
-    language: (profile as any)?.preferences?.language ?? "en",
-    currency: (profile as any)?.preferences?.currency ?? "INR",
+    emailNotifications: (profile as UserProfile)?.preferences?.emailNotifications ?? true,
+    smsNotifications: (profile as UserProfile)?.preferences?.smsNotifications ?? false,
+    pushNotifications: (profile as UserProfile)?.preferences?.pushNotifications ?? true,
+    language: (profile as UserProfile)?.preferences?.language ?? "en",
+    currency: (profile as UserProfile)?.preferences?.currency ?? "INR",
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
@@ -35,14 +51,14 @@ const ClientProfile = () => {
         displayName: profile.displayName,
         phone: profile.phone ?? "",
         city: profile.city ?? "",
-        locality: (profile as any).locality ?? "",
+        locality: (profile as UserProfile).locality ?? "",
       });
       setPreferences({
-        emailNotifications: (profile as any)?.preferences?.emailNotifications ?? true,
-        smsNotifications: (profile as any)?.preferences?.smsNotifications ?? false,
-        pushNotifications: (profile as any)?.preferences?.pushNotifications ?? true,
-        language: (profile as any)?.preferences?.language ?? "en",
-        currency: (profile as any)?.preferences?.currency ?? "INR",
+        emailNotifications: (profile as UserProfile)?.preferences?.emailNotifications ?? true,
+        smsNotifications: (profile as UserProfile)?.preferences?.smsNotifications ?? false,
+        pushNotifications: (profile as UserProfile)?.preferences?.pushNotifications ?? true,
+        language: (profile as UserProfile)?.preferences?.language ?? "en",
+        currency: (profile as UserProfile)?.preferences?.currency ?? "INR",
       });
     }
   }, [profile]);
@@ -53,7 +69,7 @@ const ClientProfile = () => {
     setSaved(false);
   };
 
-  const setPref = (key: keyof typeof preferences, value: any) => {
+  const setPref = (key: keyof typeof preferences, value: boolean | string) => {
     setPreferences((p) => ({ ...p, [key]: value }));
     setSaved(false);
   };

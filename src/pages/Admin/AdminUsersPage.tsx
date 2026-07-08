@@ -16,6 +16,14 @@ interface UserObj {
   lastLoginAt?: string;
 }
 
+interface FirebaseUser {
+  email?: string;
+  displayName?: string;
+  role?: string;
+  createdAt?: string;
+  lastLoginAt?: string;
+}
+
 const AdminUsersPage = () => {
   const [users, setUsers] = useState<UserObj[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,11 +38,11 @@ const AdminUsersPage = () => {
         const snap = await get(ref(database, "users"));
         if (snap.exists()) {
           const data = snap.val();
-          const list: UserObj[] = Object.entries(data).map(([id, u]: [string, any]) => ({
+          const list: UserObj[] = Object.entries(data).map(([id, u]: [string, FirebaseUser]) => ({
             id,
             email: u.email ?? "",
             displayName: u.displayName ?? "",
-            role: u.role ?? "client",
+            role: (u.role === "client" || u.role === "worker" || u.role === "admin") ? u.role : "client",
             createdAt: u.createdAt,
             lastLoginAt: u.lastLoginAt,
           }));

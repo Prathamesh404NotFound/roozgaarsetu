@@ -12,6 +12,20 @@ import { useAuth } from "@/components/Auth/AuthProvider";
 import { database } from "@/lib/firebase";
 import type { Booking, BookingStatus, PaymentStatus } from "@/types";
 
+interface SavedWorker {
+  id: string;
+  name: string;
+  category?: string;
+  location?: string;
+}
+
+interface Notification {
+  id: string;
+  message: string;
+  createdAt: string;
+  read?: boolean;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }> = {
@@ -54,8 +68,8 @@ const ClientDashboard = () => {
   const { user, profile } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [savedWorkers, setSavedWorkers] = useState<any[]>([]);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [savedWorkers, setSavedWorkers] = useState<SavedWorker[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
@@ -101,7 +115,7 @@ const ClientDashboard = () => {
     if (!user) return;
     get(ref(database, `users/${user.uid}/notifications`)).then((snap) => {
       if (snap.exists()) {
-        const notifs = Object.entries(snap.val()).map(([id, n]: [string, any]) => ({ id, ...n }));
+        const notifs = Object.entries(snap.val()).map(([id, n]: [string, Notification]) => ({ id, ...n }));
         setNotifications(notifs.sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
       }
     });
