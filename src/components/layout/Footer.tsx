@@ -44,7 +44,7 @@ export const Footer = () => {
         <div className="grid gap-8 lg:grid-cols-5">
           {/* Brand Column */}
           <div className="lg:col-span-2">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2" title="RoozgaarSetu" aria-label="RoozgaarSetu">
               <Logo className="h-9 w-9 shrink-0" />
               <div className="flex flex-col">
                 <span className="font-heading text-lg font-bold leading-tight text-white">

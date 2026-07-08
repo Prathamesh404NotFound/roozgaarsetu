@@ -8,8 +8,8 @@ const Index = () => {
   return (
     <Layout>
       <SEO
-        title="Find Verified Cooks, Cleaners, Drivers & Caregivers in Kolhapur"
-        description="Connect with trusted local cooks, cleaners, drivers, babysitters, and eldercare helpers in Kolhapur, Maharashtra. Multi-tier verified domestic workers."
+        title="RoozgaarSetu | Kolhapur's Verified Worker & Service Marketplace"
+        description="RoozgaarSetu is Kolhapur's independent worker marketplace for verified cooks, cleaners, drivers, childcare & eldercare — not a government portal."
         path="/"
       />
       <HeroSection />

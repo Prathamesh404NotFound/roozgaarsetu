@@ -71,9 +71,18 @@ const About = () => {
               About RoozgaarSetu
             </h1>
             <p className="text-lg text-white/80">
-              Connecting Professionals and Opportunities. We are dedicated to building Kolhapur's leading peer-to-peer ecosystem for gig work and domestic help services.
+              Connecting Professionals and Opportunities. We are dedicated to building RoozgaarSetu as Kolhapur's leading peer-to-peer ecosystem for gig work and domestic help services.
             </p>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Disambiguation & Identity Banner */}
+      <section className="bg-muted/30 border-y border-border py-6">
+        <div className="container text-center max-w-3xl">
+          <p className="text-sm text-muted-foreground">
+            <strong>Important Notice:</strong> RoozgaarSetu is an independent, Kolhapur-based C2C service marketplace — not affiliated with any government employment scheme, government application, or third-party app of a similar name (such as the MP Rozgar Setu).
+          </p>
         </div>
       </section>
 
@@ -91,7 +100,7 @@ const About = () => {
                 Our Mission
               </span>
               <h2 className="mb-6 font-heading text-2xl font-bold md:text-3xl">
-                Building Professional Networks
+                Building Professional Hyperlocal Networks
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
                 Finding the right professional opportunities has always been a challenge due to lack of trust and verified connections. At RoozgaarSetu, we're solving this by creating a secure platform that prioritizes multi-level verification, transparency, and top-tier service. We believe every local helper deserves career growth, and every client deserves access to verified talent.
