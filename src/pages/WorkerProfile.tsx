@@ -22,7 +22,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { VerificationBadge } from "@/components/ui/VerificationBadge";
 import { RatingStars } from "@/components/ui/RatingStars";
-import { ref, get } from "firebase/database";
+import { ref, onValue } from "firebase/database";
 import { database } from "@/lib/firebase";
 
 interface WorkerData {
@@ -80,43 +80,54 @@ const WorkerProfile = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchWorker = async () => {
-      if (!id) return;
-      try {
-        const [workerSnap, userSnap] = await Promise.all([
-          get(ref(database, `workers/${id}`)),
-          get(ref(database, `users/${id}`))
-        ]);
+    if (!id) return;
 
+    let displayName = "Worker";
+
+    // Real-time listener for worker record
+    const unsubWorker = onValue(
+      ref(database, `workers/${id}`),
+      (workerSnap) => {
         if (workerSnap.exists()) {
           const workerData = workerSnap.val();
-          const userData = userSnap.exists() ? userSnap.val() : {};
-
           setWorker({
             id,
-            name: userData.displayName || "Worker",
-            services: workerData.categories || [workerData.category],
+            name: displayName,
+            services: workerData.categories || (workerData.category ? [workerData.category] : []),
             rating: 4.5,
             reviewCount: 0,
             verified: workerData.isVerified || false,
             verificationStatus: workerData.verificationStatus,
-            hourlyRate: 100,
+            hourlyRate: workerData.servicePreferences?.hourlyRate ?? 100,
             location: workerData.city || workerData.locality || "Pune",
             experience: workerData.experience || "0 years",
             bio: workerData.bio || "Professional worker",
             languages: ["Hindi", "Marathi"],
             availability: ["Mon", "Tue", "Wed", "Thu", "Fri"],
-            reviews: []
+            reviews: [],
           });
         }
-      } catch (err) {
-        console.error("Failed to fetch worker:", err);
-      } finally {
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Failed to listen to worker:", err);
         setLoading(false);
       }
-    };
+    );
 
-    fetchWorker();
+    // Real-time listener for display name
+    const unsubUser = onValue(
+      ref(database, `users/${id}`),
+      (userSnap) => {
+        displayName = userSnap.exists() ? userSnap.val().displayName || "Worker" : "Worker";
+        setWorker((prev) => prev ? { ...prev, name: displayName } : prev);
+      }
+    );
+
+    return () => {
+      unsubWorker();
+      unsubUser();
+    };
   }, [id]);
 
   if (loading) {

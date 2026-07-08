@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Calendar, Clock, MapPin, ArrowRight, CheckCircle2, Zap, TrendingUp, Loader2 } from "lucide-react";
-import { ref, push, set, get } from "firebase/database";
+import { ref, push, set, get, onValue } from "firebase/database";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,40 +48,36 @@ const Booking = () => {
 
   // Fetch worker from Firebase
   useEffect(() => {
-    const fetchWorker = async () => {
-      if (!workerId) return;
-      try {
-        const [workerSnap, userSnap] = await Promise.all([
-          get(ref(database, `workers/${workerId}`)),
-          get(ref(database, `users/${workerId}`))
-        ]);
+    if (!workerId) return;
 
+    const unsubWorker = onValue(
+      ref(database, `workers/${workerId}`),
+      async (workerSnap) => {
         if (workerSnap.exists()) {
           const workerData = workerSnap.val();
-          const userData = userSnap.exists() ? userSnap.val() : {};
+          // Fetch user display name (one-time is fine, rarely changes)
+          let displayName = "Worker";
+          try {
+            const userSnap = await get(ref(database, `users/${workerId}`));
+            if (userSnap.exists()) displayName = userSnap.val().displayName || "Worker";
+          } catch { /* ignore */ }
 
           setWorker({
             id: workerId,
-            name: userData.displayName || "Worker",
-            services: workerData.categories || [workerData.category],
-            rating: 4.5,
-            reviewCount: 0,
-            verified: workerData.isVerified || false,
-            verificationStatus: workerData.verificationStatus,
-            hourlyRate: 100,
-            location: workerData.city || workerData.locality || "Pune",
-            experience: workerData.experience || "0 years",
-            bio: workerData.bio || "Professional worker"
+            name: displayName,
+            services: workerData.categories || (workerData.category ? [workerData.category] : []),
+            hourlyRate: workerData.servicePreferences?.hourlyRate ?? 100,
           });
         }
-      } catch (err) {
-        console.error("Failed to fetch worker:", err);
-      } finally {
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Failed to listen to worker:", err);
         setLoading(false);
       }
-    };
+    );
 
-    fetchWorker();
+    return () => unsubWorker();
   }, [workerId]);
 
   const [selectedDate, setSelectedDate] = useState("");
@@ -230,16 +226,27 @@ const Booking = () => {
     <Layout>
       <div className="bg-gradient-hero py-8">
         <div className="container">
-          <h1 className="font-heading text-2xl font-bold text-white md:text-3xl">
-            Book {worker.name}
-          </h1>
-          <p className="text-white/80">Complete your booking in a few simple steps</p>
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+          >
+            <h1 className="font-heading text-2xl font-bold text-white md:text-3xl">
+              Book {worker.name}
+            </h1>
+            <p className="text-white/80">Complete your booking in a few simple steps</p>
+          </motion.div>
         </div>
       </div>
 
       <div className="container py-8 lg:py-12">
         {/* Progress Steps */}
-        <div className="mb-8 flex items-center justify-center gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, ease: "easeOut", delay: 0.08 }}
+          className="mb-8 flex items-center justify-center gap-4"
+        >
           {[1, 2, 3].map((s) => (
             <div key={s} className="flex items-center gap-2">
               <div
@@ -258,9 +265,14 @@ const Booking = () => {
               )}
             </div>
           ))}
-        </div>
+        </motion.div>
 
-        <div className="mx-auto max-w-2xl">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.30, ease: "easeOut", delay: 0.18 }}
+          className="mx-auto max-w-2xl"
+        >
           {/* Step 1: Select Date & Time */}
           {step === 1 && (
             <motion.div
@@ -531,7 +543,7 @@ const Booking = () => {
               </div>
             </motion.div>
           )}
-        </div>
+        </motion.div>
       </div>
     </Layout>
   );

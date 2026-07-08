@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin, MessageCircle, Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
 
 const footerLinks = {
   services: [
@@ -44,9 +45,7 @@ export const Footer = () => {
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                <span className="font-heading text-lg font-bold text-primary-foreground">R</span>
-              </div>
+              <Logo className="h-9 w-9 shrink-0" />
               <div className="flex flex-col">
                 <span className="font-heading text-lg font-bold leading-tight text-white">
                   RoozgaarSetu

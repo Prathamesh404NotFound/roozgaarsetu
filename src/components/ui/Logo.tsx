@@ -1,0 +1,40 @@
+import React from "react";
+import { cn } from "@/lib/utils";
+
+interface LogoProps extends React.SVGProps<SVGSVGElement> {
+  className?: string;
+}
+
+export const Logo: React.FC<LogoProps> = ({ className, ...props }) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 380 380"
+      className={cn("h-10 w-10 select-none", className)}
+      {...props}
+    >
+      <g>
+        <path
+          d="M 30 330 L 40 332 L 107 332 L 118 302 L 129 285 L 137 277 L 152 267 L 169 260 L 196 258 L 224 267 L 245 283 L 263 312 L 268 332 L 346 331 L 325 292 L 314 278 L 287 254 L 249 234 L 229 228 L 202 224 L 173 224 L 147 228 L 117 238 L 93 251 L 76 264 L 57 284 L 40 309 Z"
+          fill="#004a99"
+        />
+        <path
+          d="M 207 202 L 189 183 L 177 191 L 169 190 L 165 186 L 165 178 L 175 163 L 166 162 L 138 145 L 122 140 L 98 138 L 84 140 L 68 146 L 46 163 L 31 191 L 29 202 L 29 298 L 49 270 L 77 244 L 79 229 L 85 213 L 103 194 L 120 189 L 136 191 L 152 197 L 176 212 L 187 216 L 198 211 L 200 208 L 207 208 Z"
+          fill="#004a99"
+        />
+        <path
+          d="M 60 64 L 48 71 L 40 83 L 38 92 L 40 107 L 46 117 L 59 126 L 71 128 L 84 125 L 96 115 L 101 106 L 101 85 L 96 75 L 87 67 L 77 63 Z"
+          fill="#004a99"
+        />
+        <path
+          d="M 170 180 L 171 185 L 175 186 L 185 177 L 189 177 L 214 202 L 234 193 L 250 189 L 263 190 L 276 196 L 287 207 L 295 222 L 299 244 L 325 268 L 347 299 L 345 193 L 341 181 L 332 166 L 316 151 L 301 143 L 287 139 L 260 139 L 232 148 L 205 165 L 193 161 L 185 162 Z"
+          fill="#ff7a00"
+        />
+        <path
+          d="M 295 64 L 287 68 L 276 82 L 274 88 L 275 106 L 280 115 L 287 122 L 295 126 L 313 127 L 319 125 L 331 115 L 337 103 L 336 84 L 331 75 L 318 65 L 312 63 Z"
+          fill="#ff7a00"
+        />
+      </g>
+    </svg>
+  );
+};

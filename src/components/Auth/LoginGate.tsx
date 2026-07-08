@@ -1,5 +1,6 @@
 import React, { ReactNode } from "react";
 import { useAuth } from "./AuthProvider";
+import { Logo } from "@/components/ui/Logo";
 
 // ─── Loading spinner ──────────────────────────────────────────────────────────
 
@@ -57,21 +58,7 @@ const LoginScreen: React.FC = () => {
         <div className="h-1.5 w-full bg-gradient-accent" />
 
         <div className="px-8 py-10 flex flex-col items-center gap-6 text-center">
-          {/* Brand mark */}
-          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-gradient-hero shadow-brand">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              className="w-7 h-7 text-white"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z" />
-              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-            </svg>
-          </div>
+          <Logo className="w-14 h-14 shadow-brand rounded-full bg-white p-2 border border-border" />
 
           {/* Heading */}
           <div>
