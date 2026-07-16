@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ref, get, update, remove } from "firebase/database";
 import { Search, Loader2, ArrowLeft, Mail, Calendar, User, Edit2, Trash2, ShieldAlert } from "lucide-react";
-import { Layout } from "@/components/layout/Layout";
 import { database } from "@/lib/firebase";
 import { toast } from "sonner";
 
@@ -107,7 +106,7 @@ const AdminUsersPage = () => {
   };
 
   return (
-    <Layout>
+    <div>
       <section className="bg-gradient-hero py-10 lg:py-14">
         <div className="container">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
@@ -242,7 +241,7 @@ const AdminUsersPage = () => {
           )}
         </div>
       </section>
-    </Layout>
+    </div>
   );
 };
 

@@ -6,7 +6,6 @@ import {
   BarChart3, PieChart, Activity, ArrowUpRight, ArrowDownRight,
   Loader2, MapPin, Clock, CheckCircle2, AlertTriangle
 } from "lucide-react";
-import { Layout } from "@/components/layout/Layout";
 import { database } from "@/lib/firebase";
 import type { Booking } from "@/types";
 
@@ -139,21 +138,21 @@ const AdminAnalyticsPage = () => {
 
   if (loading) {
     return (
-      <Layout>
+      <div>
         <div className="container py-20 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </Layout>
+      </div>
     );
   }
 
   if (!analytics) {
     return (
-      <Layout>
+      <div>
         <div className="container py-20 text-center">
           <p className="text-muted-foreground">Failed to load analytics data</p>
         </div>
-      </Layout>
+      </div>
     );
   }
 
@@ -167,7 +166,7 @@ const AdminAnalyticsPage = () => {
   ];
 
   return (
-    <Layout>
+    <div>
       {/* Header */}
       <section className="bg-gradient-hero py-10 lg:py-14">
         <div className="container">
@@ -368,7 +367,7 @@ const AdminAnalyticsPage = () => {
           </motion.div>
         </div>
       </section>
-    </Layout>
+    </div>
   );
 };
 

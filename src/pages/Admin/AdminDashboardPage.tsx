@@ -7,7 +7,6 @@ import {
   AlertTriangle, ShieldCheck, MapPin, TrendingUp, IndianRupee, Wallet, Calendar,
   Filter, Award, Eye, Hammer, RefreshCw, Lock as LockIcon, Settings, BarChart, FileText
 } from "lucide-react";
-import { Layout } from "@/components/layout/Layout";
 import { database } from "@/lib/firebase";
 import type { Booking, WorkerRecord, UserProfile, BookingStatus, PaymentStatus } from "@/types";
 import { getLocalityCoords } from "@/lib/location";
@@ -482,7 +481,7 @@ const AdminDashboardPage = () => {
   });
 
   return (
-    <Layout>
+    <div>
       <section className="bg-gradient-hero py-10 lg:py-14 text-white">
         <div className="container">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1149,7 +1148,7 @@ const AdminDashboardPage = () => {
           )}
         </div>
       </section>
-    </Layout>
+    </div>
   );
 };
 

@@ -27,6 +27,8 @@ export interface UserProfile {
   displayName: string;
   photoURL?: string;
   role: 'job_seeker' | 'employer' | 'admin' | 'client' | 'worker';
+  /** True once BecomeWorker form is completed. Independent of role. */
+  isWorkerRegistered?: boolean;
   createdAt: string;
   updatedAt: string;
   isVerified: boolean;
@@ -129,6 +131,7 @@ export const userProfileService = {
       displayName: user.displayName || '',
       photoURL: user.photoURL || '',
       role: 'client', // Default role to match existing app
+      isWorkerRegistered: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isVerified: false

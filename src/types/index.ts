@@ -8,7 +8,17 @@ export interface UserProfile {
   phone?: string;
   city?: string;
   locality?: string;
+  /**
+   * Primary account designation — never overwritten by BecomeWorker.
+   * Use isWorkerRegistered to check worker capability instead of
+   * comparing this against "worker".
+   */
   role: 'client' | 'worker' | 'admin';
+  /**
+   * True once the user has completed the BecomeWorker registration form.
+   * Independent of `role` — a client OR admin can both have this set.
+   */
+  isWorkerRegistered: boolean;
   isVerified: boolean;
   verificationStatus?: 'unverified' | 'phone_verified' | 'id_verified';
   category?: string; // Tagged primary service category for workers

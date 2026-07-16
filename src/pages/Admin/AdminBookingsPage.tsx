@@ -6,7 +6,6 @@ import {
   ArrowLeft, Loader2, Calendar, ClipboardList, Lock,
   AlertTriangle, CheckCircle, RotateCcw, ShieldCheck
 } from "lucide-react";
-import { Layout } from "@/components/layout/Layout";
 import { database } from "@/lib/firebase";
 import type { Booking, BookingStatus, PaymentStatus } from "@/types";
 
@@ -133,7 +132,7 @@ const AdminBookingsPage = () => {
   };
 
   return (
-    <Layout>
+    <div>
       <section className="bg-gradient-hero py-10 lg:py-14">
         <div className="container">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
@@ -266,7 +265,7 @@ const AdminBookingsPage = () => {
           )}
         </div>
       </section>
-    </Layout>
+    </div>
   );
 };
 

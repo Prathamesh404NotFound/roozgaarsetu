@@ -33,6 +33,7 @@ function snapshotToProfile(uid: string, data: Record<string, unknown>): UserProf
     photoURL: (data.photoURL as string | undefined) ?? undefined,
     phone: (data.phone as string | undefined) ?? undefined,
     role: (data.role as UserProfile["role"]) ?? "client",
+    isWorkerRegistered: (data.isWorkerRegistered as boolean) ?? false,
     isVerified: (data.isVerified as boolean) ?? false,
     verificationStatus: (data.verificationStatus as UserProfile["verificationStatus"]) ?? "unverified",
     category: (data.category as string | undefined) ?? undefined,
@@ -56,8 +57,15 @@ interface AuthContextType {
   /**
    * Persists a new role to the database AND updates local state immediately
    * so consumers don't need a re-login to see the change.
+   * Only use this for genuine role changes (e.g. admin promotion).
+   * To register a user as a worker without touching their role, use markUserAsWorker().
    */
   updateUserRole: (role: UserProfile["role"]) => Promise<void>;
+  /**
+   * Sets isWorkerRegistered: true on the user profile without touching the role field.
+   * Call this after writing the workers/{uid} record in BecomeWorker.
+   */
+  markUserAsWorker: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -107,6 +115,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           displayName: firebaseUser.displayName ?? "",
           photoURL: firebaseUser.photoURL ?? undefined,
           role: "client",
+          isWorkerRegistered: false,
           isVerified: false,
           verificationStatus: "unverified",
           createdAt: new Date(),
@@ -163,6 +172,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     [user]
   );
 
+  // ── markUserAsWorker ───────────────────────────────────────────────────────
+  /**
+   * Sets isWorkerRegistered: true on the user profile.
+   * Does NOT touch the role field — a client stays "client", an admin stays "admin".
+   */
+  const markUserAsWorker = useCallback(async (): Promise<void> => {
+    if (!user) throw new Error("No authenticated user");
+
+    await update(userRef(user.uid), { isWorkerRegistered: true });
+
+    // Reflect immediately in local state so RoleRoute re-evaluates without re-login
+    setProfile((prev) => (prev ? { ...prev, isWorkerRegistered: true } : prev));
+  }, [user]);
+
   // ── Context value ──────────────────────────────────────────────────────────
   const value: AuthContextType = {
     user,
@@ -171,7 +194,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loginWithGoogle,
     logout,
     updateUserRole,
+    markUserAsWorker,
   };
+
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

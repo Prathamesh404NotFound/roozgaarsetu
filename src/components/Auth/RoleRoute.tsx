@@ -5,23 +5,43 @@ import type { UserProfile } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Role = UserProfile["role"];
+/**
+ * The access mode that a RoleRoute enforces:
+ *  - "any"    → any authenticated user passes (used for client routes — every
+ *               logged-in account is implicitly a client)
+ *  - "worker" → profile.isWorkerRegistered must be true
+ *  - "admin"  → profile.role must be exactly "admin"
+ */
+type AccessMode = "any" | "worker" | "admin";
 
 interface RoleRouteProps {
   children: ReactNode;
-  allowedRoles: Role[];
+  /** Pass one or more AccessMode values. A profile passes if ANY mode matches. */
+  allowedRoles: AccessMode[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Returns the dashboard path for a given role. */
-function dashboardFor(role: Role): string {
-  switch (role) {
-    case "worker": return "/dashboard/worker";
-    case "admin":  return "/admin";
-    case "client":
-    default:       return "/dashboard/client";
-  }
+/** Returns the most appropriate dashboard path based on capability flags. */
+function dashboardFor(profile: UserProfile): string {
+  if (profile.role === "admin") return "/admin";
+  if (profile.isWorkerRegistered) return "/dashboard/worker";
+  return "/dashboard/client";
+}
+
+/**
+ * Returns true if the given profile satisfies at least one of the required
+ * access modes.
+ */
+function hasAccess(profile: UserProfile, allowedRoles: AccessMode[]): boolean {
+  return allowedRoles.some((mode) => {
+    switch (mode) {
+      case "any":    return true;                          // any logged-in user
+      case "worker": return profile.isWorkerRegistered;   // worker-registered flag
+      case "admin":  return profile.role === "admin";     // exact role check
+      default:       return false;
+    }
+  });
 }
 
 // ─── Loading spinner (same visual as LoginGate) ───────────────────────────────
@@ -46,15 +66,22 @@ const FullScreenSpinner = () => (
 // ─── Access Denied screen ─────────────────────────────────────────────────────
 
 interface AccessDeniedProps {
-  userRole: Role;
-  allowedRoles: Role[];
+  profile: UserProfile;
+  allowedRoles: AccessMode[];
 }
 
-const AccessDenied = ({ userRole, allowedRoles }: AccessDeniedProps) => {
-  const ownDashboard = dashboardFor(userRole);
-  const allowedLabel = allowedRoles
-    .map((r) => r.charAt(0).toUpperCase() + r.slice(1))
-    .join(" / ");
+/** Human-readable label for an AccessMode. */
+function modeLabel(mode: AccessMode): string {
+  switch (mode) {
+    case "any":    return "Authenticated";
+    case "worker": return "Registered Worker";
+    case "admin":  return "Admin";
+  }
+}
+
+const AccessDenied = ({ profile, allowedRoles }: AccessDeniedProps) => {
+  const ownDashboard = dashboardFor(profile);
+  const allowedLabel = allowedRoles.map(modeLabel).join(" / ");
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-background z-50 px-4">
@@ -102,13 +129,9 @@ const AccessDenied = ({ userRole, allowedRoles }: AccessDeniedProps) => {
               Access Denied
             </h1>
             <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              This page is restricted to{" "}
+              This page requires{" "}
               <span className="font-semibold text-foreground">{allowedLabel}</span>{" "}
-              accounts. Your current role is{" "}
-              <span className="font-semibold text-foreground capitalize">
-                {userRole}
-              </span>
-              .
+              access. Your account does not have the required permissions.
             </p>
           </div>
 
@@ -139,13 +162,20 @@ const AccessDenied = ({ userRole, allowedRoles }: AccessDeniedProps) => {
 // ─── RoleRoute ────────────────────────────────────────────────────────────────
 
 /**
- * Wraps a route subtree and enforces role access.
+ * Wraps a route subtree and enforces capability-based access.
+ *
+ * Access modes (passed via allowedRoles):
+ *  - "any"    → any authenticated user (client routes)
+ *  - "worker" → profile.isWorkerRegistered === true (worker routes)
+ *  - "admin"  → profile.role === "admin" (admin routes)
+ *
+ * A profile passes if it satisfies ANY of the listed modes.
  *
  * Behaviour:
- *  - loading  → full-screen spinner
- *  - !user    → redirect to "/" (LoginGate will intercept and show login)
- *  - role not in allowedRoles → Access Denied screen with link to own dashboard
- *  - otherwise → renders children
+ *  - loading      → full-screen spinner
+ *  - !user        → redirect to "/" (LoginGate will intercept and show login)
+ *  - no access    → Access Denied screen with link to own dashboard
+ *  - otherwise    → renders children
  */
 const RoleRoute = ({ children, allowedRoles }: RoleRouteProps) => {
   const { user, profile, loading } = useAuth();
@@ -155,8 +185,8 @@ const RoleRoute = ({ children, allowedRoles }: RoleRouteProps) => {
   // LoginGate should already handle this, but be defensive
   if (!user || !profile) return <Navigate to="/" replace />;
 
-  if (!allowedRoles.includes(profile.role)) {
-    return <AccessDenied userRole={profile.role} allowedRoles={allowedRoles} />;
+  if (!hasAccess(profile, allowedRoles)) {
+    return <AccessDenied profile={profile} allowedRoles={allowedRoles} />;
   }
 
   return <>{children}</>;

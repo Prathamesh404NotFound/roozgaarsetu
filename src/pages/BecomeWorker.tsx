@@ -66,7 +66,7 @@ const INITIAL: FormState = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const BecomeWorker = () => {
-  const { user, profile, updateUserRole } = useAuth();
+  const { user, profile, markUserAsWorker } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState<FormState>(INITIAL);
@@ -82,8 +82,8 @@ const BecomeWorker = () => {
       navigate("/", { replace: true });
       return;
     }
-    // Already a worker or admin — send them straight to their dashboard
-    if (profile && profile.role !== "client") {
+    // Already registered as a worker — send them straight to their dashboard
+    if (profile && profile.isWorkerRegistered) {
       navigate("/dashboard/worker", { replace: true });
     }
   }, [user, profile, navigate]);
@@ -134,8 +134,9 @@ const BecomeWorker = () => {
       };
       await set(ref(database, `workers/${user.uid}`), workerData);
 
-      // 2. Upgrade the role on the SAME account — no new account created
-      await updateUserRole("worker");
+      // 2. Mark the account as worker-registered without changing the role
+      await markUserAsWorker();
+
 
       setSuccess(true);
 

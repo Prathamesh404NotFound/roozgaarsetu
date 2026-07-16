@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Save, Loader2, Bell, Shield, Globe, Palette } from "lucide-react";
-import { Layout } from "@/components/layout/Layout";
 import { toast } from "sonner";
 
 const AdminSettingsPage = () => {
@@ -27,7 +26,7 @@ const AdminSettingsPage = () => {
   };
 
   return (
-    <Layout>
+    <div>
       <section className="bg-gradient-hero py-10 lg:py-14">
         <div className="container">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
@@ -188,7 +187,7 @@ const AdminSettingsPage = () => {
           </div>
         </div>
       </section>
-    </Layout>
+    </div>
   );
 };
 

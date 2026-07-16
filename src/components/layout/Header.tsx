@@ -56,6 +56,15 @@ export const Header = () => {
     return "/profile/client";
   };
 
+  /** Badge label shown under the user's name in the dropdown. */
+  const getRoleBadge = () => {
+    const parts: string[] = [];
+    if (isAdmin) parts.push("Admin");
+    if (isWorker) parts.push("Worker");
+    if (!isAdmin && !isWorker) parts.push("Client");
+    return parts.join(" + ");
+  };
+
   const changeLanguage = (code: string) => {
     i18n.changeLanguage(code);
     localStorage.setItem("rs_lang", code);
@@ -192,7 +201,7 @@ export const Header = () => {
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none text-foreground">{user.displayName || user.email}</p>
                       <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                      <p className="text-[10px] uppercase font-bold text-primary mt-1">{userProfile?.role || 'user'}</p>
+                      <p className="text-[10px] uppercase font-bold text-primary mt-1">{getRoleBadge()}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -204,11 +213,30 @@ export const Header = () => {
                     </Link>
                   </DropdownMenuItem>
 
+                  {/* Client dashboard link — visible to all logged-in users */}
+                  {(isWorker || isAdmin) && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard/client" className="flex items-center gap-2 cursor-pointer">
+                        <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
+                        <span>{t("nav.dashboard")} (Client)</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Profile settings — always client profile; worker profile if registered */}
+                  {isWorker && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile/worker" className="flex items-center gap-2 cursor-pointer">
+                        <Settings className="h-4 w-4 text-muted-foreground" />
+                        <span>{t("nav.profileSettings")} (Worker)</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   {!isAdmin && (
                     <DropdownMenuItem asChild>
-                      <Link to={getProfileHref()} className="flex items-center gap-2 cursor-pointer">
+                      <Link to="/profile/client" className="flex items-center gap-2 cursor-pointer">
                         <Settings className="h-4 w-4 text-muted-foreground" />
-                        <span>{t("nav.profileSettings")}</span>
+                        <span>{t("nav.profileSettings")}{isWorker ? " (Client)" : ""}</span>
                       </Link>
                     </DropdownMenuItem>
                   )}
@@ -300,7 +328,7 @@ export const Header = () => {
                       <UserAvatar className="h-10 w-10 shrink-0" />
                       <div className="min-w-0">
                         <p className="text-sm font-semibold truncate">{user.displayName || user.email}</p>
-                        <p className="text-xs text-muted-foreground truncate">{t("nav.loggedInAs")} {userProfile?.role || 'user'}</p>
+                        <p className="text-xs text-muted-foreground truncate">{t("nav.loggedInAs")} {getRoleBadge()}</p>
                       </div>
                     </div>
 
@@ -314,14 +342,39 @@ export const Header = () => {
                       {isAdmin ? t("nav.adminPanel") : t("nav.dashboard")}
                     </Link>
 
-                    {!isAdmin && (
+                    {/* Client dashboard — visible to all logged-in users */}
+                    {(isWorker || isAdmin) && (
                       <Link
-                        to={getProfileHref()}
+                        to="/dashboard/client"
+                        onClick={() => setIsOpen(false)}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-2.5 text-sm font-medium hover:bg-muted/55 transition-colors"
+                      >
+                        <LayoutDashboard className="h-4 w-4" />
+                        {t("nav.dashboard")} (Client)
+                      </Link>
+                    )}
+
+                    {/* Worker profile link */}
+                    {isWorker && (
+                      <Link
+                        to="/profile/worker"
                         onClick={() => setIsOpen(false)}
                         className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-2.5 text-sm font-medium hover:bg-muted/55 transition-colors"
                       >
                         <Settings className="h-4 w-4" />
-                        {t("nav.profileSettings")}
+                        {t("nav.profileSettings")} (Worker)
+                      </Link>
+                    )}
+
+                    {/* Client profile link */}
+                    {!isAdmin && (
+                      <Link
+                        to="/profile/client"
+                        onClick={() => setIsOpen(false)}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-2.5 text-sm font-medium hover:bg-muted/55 transition-colors"
+                      >
+                        <Settings className="h-4 w-4" />
+                        {t("nav.profileSettings")}{isWorker ? " (Client)" : ""}
                       </Link>
                     )}
 

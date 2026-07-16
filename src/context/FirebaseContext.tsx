@@ -106,8 +106,16 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({ children }) 
   const isJobSeeker = userProfile?.role === 'job_seeker' || userProfile?.role === 'client';
   const isEmployer = userProfile?.role === 'employer' || userProfile?.role === 'worker';
   const isAdmin = userProfile?.role === 'admin';
-  const isClient = userProfile?.role === 'client' || userProfile?.role === 'job_seeker';
-  const isWorker = userProfile?.role === 'worker' || userProfile?.role === 'employer';
+  /**
+   * Every authenticated user is a client — regardless of primary role.
+   * Admins and registered workers all retain client access.
+   */
+  const isClient = !!user;
+  /**
+   * True once the user has submitted the BecomeWorker form.
+   * Checked via isWorkerRegistered flag, not the role field.
+   */
+  const isWorker = userProfile?.isWorkerRegistered === true;
 
   const value: FirebaseContextType = {
     user,

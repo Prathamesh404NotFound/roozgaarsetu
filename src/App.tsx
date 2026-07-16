@@ -24,6 +24,7 @@ import AdminWorkersPage from "./pages/Admin/AdminWorkersPage";
 import AdminBookingsPage from "./pages/Admin/AdminBookingsPage";
 import AdminSettingsPage from "./pages/Admin/AdminSettingsPage";
 import AdminAnalyticsPage from "./pages/Admin/AdminAnalyticsPage";
+import AdminLayoutPage from "./components/Admin/AdminLayoutPage";
 import BookingDetail from "./pages/BookingDetail";
 import NotFound from "./pages/NotFound";
 
@@ -49,11 +50,11 @@ const App = () => (
               <Route path="/contact" element={<Contact />} />
               <Route path="/become-worker" element={<BecomeWorker />} />
 
-              {/* ── Client-only dashboard & profile ─────────────────────── */}
+              {/* ── Client dashboard & profile ─────────────────────────── */}
               <Route
                 path="/dashboard/client"
                 element={
-                  <RoleRoute allowedRoles={["client"]}>
+                  <RoleRoute allowedRoles={["any"]}>
                     <ClientDashboard />
                   </RoleRoute>
                 }
@@ -61,13 +62,13 @@ const App = () => (
               <Route
                 path="/profile/client"
                 element={
-                  <RoleRoute allowedRoles={["client"]}>
+                  <RoleRoute allowedRoles={["any"]}>
                     <ClientProfile />
                   </RoleRoute>
                 }
               />
 
-              {/* ── Worker-only dashboard & profile ─────────────────────── */}
+              {/* ── Worker dashboard & profile ─────────────────────────── */}
               <Route
                 path="/dashboard/worker"
                 element={
@@ -85,55 +86,24 @@ const App = () => (
                 }
               />
 
-              {/* ── Admin-only area ─────────────────────────────────────── */}
+              {/* ── Admin area ───────────────────────────────────── */}
+              {/* One RoleRoute guards the entire /admin tree; all children   */}
+              {/* render inside AdminLayoutPage's <Outlet /> — no per-page wrapping */}
               <Route
                 path="/admin"
                 element={
                   <RoleRoute allowedRoles={["admin"]}>
-                    <AdminDashboardPage />
+                    <AdminLayoutPage />
                   </RoleRoute>
                 }
-              />
-              <Route
-                path="/admin/users"
-                element={
-                  <RoleRoute allowedRoles={["admin"]}>
-                    <AdminUsersPage />
-                  </RoleRoute>
-                }
-              />
-              <Route
-                path="/admin/workers"
-                element={
-                  <RoleRoute allowedRoles={["admin"]}>
-                    <AdminWorkersPage />
-                  </RoleRoute>
-                }
-              />
-              <Route
-                path="/admin/bookings"
-                element={
-                  <RoleRoute allowedRoles={["admin"]}>
-                    <AdminBookingsPage />
-                  </RoleRoute>
-                }
-              />
-              <Route
-                path="/admin/settings"
-                element={
-                  <RoleRoute allowedRoles={["admin"]}>
-                    <AdminSettingsPage />
-                  </RoleRoute>
-                }
-              />
-              <Route
-                path="/admin/analytics"
-                element={
-                  <RoleRoute allowedRoles={["admin"]}>
-                    <AdminAnalyticsPage />
-                  </RoleRoute>
-                }
-              />
+              >
+                <Route index element={<AdminDashboardPage />} />
+                <Route path="users" element={<AdminUsersPage />} />
+                <Route path="workers" element={<AdminWorkersPage />} />
+                <Route path="bookings" element={<AdminBookingsPage />} />
+                <Route path="analytics" element={<AdminAnalyticsPage />} />
+                <Route path="settings" element={<AdminSettingsPage />} />
+              </Route>
 
               <Route path="*" element={<NotFound />} />
             </Routes>
